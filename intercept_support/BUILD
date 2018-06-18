@@ -1,7 +1,10 @@
 cc_library(
     name = "matcher",
     srcs = ["matcher.cc"],
-    hdrs = ["matcher.h"],
+    hdrs = [
+        "matcher.h",
+        "patterns.h",
+    ],
     deps = [
         "//build_system/proto:cpp",
         "@abseil//absl/strings",

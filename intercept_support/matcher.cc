@@ -1,5 +1,6 @@
 // Copyright (c) 2018 Code Intelligence. All rights reserved.
 
+#include "build_system/intercept_support/patterns.h"
 #include "build_system/intercept_support/matcher.h"
 #include "re2/re2.h"
 
@@ -16,4 +17,7 @@ std::string Matcher::GetParameters(const std::string &command, const MatchingRul
   std::string params;
   RE2::FullMatch(command, matching_rule.match_command(), &params);
   return std::move(params);
+}
+bool Matcher::doesCompileSharedLib(const std::string &command) {
+  return RE2::FullMatch(command, SHARED_LIB_PATTERN);
 }

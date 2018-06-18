@@ -12,6 +12,7 @@ class Matcher {
 
   absl::optional<MatchingRule> GetMatchingRule(const std::string &command);
   std::string GetParameters(const std::string &command, const MatchingRule &matching_rule);
+  bool doesCompileSharedLib (const std::string& command);
 
  private:
   InterceptSettings settings_;
