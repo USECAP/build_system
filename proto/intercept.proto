@@ -6,6 +6,10 @@ message InterceptedCommand {
 
   string replaced_command = 3;
   repeated string replaced_arguments = 4;
+
+  string directory = 5;
+  string file = 6;
+  string output = 7;
 }
 
 message MatchingRule {

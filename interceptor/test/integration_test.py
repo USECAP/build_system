@@ -2,15 +2,13 @@ import os
 import subprocess
 import unittest
 
-from build_system.proto import intercept_pb2
-from build_system.proto import intercept_pb2_grpc
+from build_system.interceptor.grpc_server import InterceptorServer
+from build_system.interceptor.interceptor import main
 
-from build_system.interceptor.grpc_server import InterceptorServer, InterceptorService
-
-LD_PRELOAD_PATH = "build_system/preload_interceptor/preload_interceptor.so"
-BUILD_SH_PATH = "build_system/interceptor/test/build.sh"
-
-GET_INTERCEPT_SETTINGS_WAS_CALLED = False
+LD_PRELOAD_PATH = os.path.abspath("build_system/preload_interceptor/preload_interceptor.so")
+INTERCEPT_PATH = os.path.abspath("build_system/interceptor/intercept")
+TEST_PATH = os.path.abspath("build_system/interceptor/test")
+BUILD_SH_PATH = "{}/{}".format(TEST_PATH, "build.sh")
 
 
 class IntegrationTests(unittest.TestCase):
@@ -19,6 +17,9 @@ class IntegrationTests(unittest.TestCase):
     def setUp(self):
         self.server = InterceptorServer()
         self.server.start()
+        self.env = os.environ.copy()
+        self.env["LD_PRELOAD"] = LD_PRELOAD_PATH
+        self.env["REPORT_URL"] = "localhost:{}".format(self.server.port)
 
     def tearDown(self):
         self.server.stop()
@@ -39,10 +40,30 @@ class IntegrationTests(unittest.TestCase):
 
     def test_preload_lib_requests_settings(self):
         self.assertTrue(os.path.isfile(BUILD_SH_PATH), msg="build file doesn't exist")
-        subprocess.call([BUILD_SH_PATH], env={"LD_PRELOAD": LD_PRELOAD_PATH,
-                                              "REPORT_URL": "localhost:{:d}".format(self.server.port)})
+        subprocess.call([BUILD_SH_PATH], cwd=TEST_PATH, env=self.env)
         self.assertTrue(self.server.interceptor_service.GET_INTERCEPT_SETTINGS_WAS_CALLED,
                         msg="Preload Lib did not get settings!")
+
+    def test_receive_commands(self):
+        self.assertTrue(os.path.isfile(BUILD_SH_PATH), msg="build file doesn't exist")
+        returncode = subprocess.call([BUILD_SH_PATH], cwd=TEST_PATH, env=self.env)
+        self.assertEquals(returncode, 0, msg="Build couldn't be executed")
+
+        self.assertEquals(self.server.interceptor_service.cmds[0]['replaced_command'], u'/usr/bin/gcc')
+        self.assertListEqual(list(self.server.interceptor_service.cmds[0]['replaced_arguments']), [u'hello.c', u'-o', u'foo'])
+
+    def test_intercept_method(self):
+        returncode = main(["--", BUILD_SH_PATH], cwd=TEST_PATH)
+        self.assertEquals(returncode, 0, msg="interceptor's main method couldn't be executed")
+
+    def test_intercept_script(self):
+        returncode = subprocess.call([INTERCEPT_PATH, "--", BUILD_SH_PATH], cwd=TEST_PATH)
+        self.assertEquals(returncode, 0, msg="intercept not executed")
+
+    def test_intercept_parser_argument(self):
+        cmd = [INTERCEPT_PATH, "--fuzzer", "libfuzzer", "--", BUILD_SH_PATH]
+        returncode = subprocess.call(cmd, cwd=TEST_PATH)
+        self.assertEquals(returncode, 0, msg="intercept not executed")
 
 
 if __name__ == '__main__':

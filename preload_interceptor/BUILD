@@ -6,7 +6,10 @@ cc_binary(
         "*.cc",
         "*.h",
     ]),
-    linkopts = ["-ldl"],
+    linkopts = [
+        "-ldl",
+        "-lstdc++fs",
+    ],
     linkshared = 1,
     linkstatic = 1,
     visibility = ["//visibility:public"],

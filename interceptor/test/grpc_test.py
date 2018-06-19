@@ -1,5 +1,6 @@
 import unittest
-from build_system.interceptor.grpc_server import InterceptorServer, InterceptorClient
+from build_system.interceptor.grpc_server import (InterceptorServer,
+                                                  InterceptorClient)
 
 
 class GrpcTests(unittest.TestCase):
@@ -7,7 +8,6 @@ class GrpcTests(unittest.TestCase):
         self.server = InterceptorServer()
         self.server.start()
         self.client = InterceptorClient("localhost", self.server.port)
-
 
     def test_server_started(self):
         self.assertTrue(self.client.get_settings())
@@ -21,6 +21,7 @@ class GrpcTests(unittest.TestCase):
         self.assertEquals(response.received, 4)
         self.assertTrue(response.message == "4 commands received")
         self.assertEquals(response.processed, 0)
+        self.assertEquals(len(self.server.interceptor_service.cmds), 4)
 
 
 if __name__ == '__main__':

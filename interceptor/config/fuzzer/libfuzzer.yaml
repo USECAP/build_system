@@ -1,0 +1,12 @@
+default:
+  compiler: "clang"
+  add_arguments:
+      - "-g"
+      - "-fsanitize=address,undefined,signed-integer-overflow"
+      - "-fsanitize-coverage=edge,indirect-calls,trace-pc-guard,trace-cmp"
+      - "-fno-omit-frame-pointer"
+  remove_arguments:
+      - "-O0"
+      - "-O1"
+      - "-O3"
+      - "-fomit-frame-pointer"
