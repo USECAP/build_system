@@ -1,6 +1,5 @@
 // Copyright (c) 2018 Code Intelligence. All rights reserved.
 
-
 #include "intercept_settings.h"
 
 #ifdef CXX17
@@ -12,11 +11,11 @@ namespace fs = std::experimental::filesystem;
 #endif
 
 InterceptorClient::InterceptorClient(std::shared_ptr<grpc::Channel> channel)
-    : stub_(Interceptor::NewStub(channel)),
-      settings_() {
+    : stub_(Interceptor::NewStub(channel)), settings_() {
   Status status;
   intercepted_command_context_ = std::make_unique<grpc::ClientContext>();
-  writer_ = stub_->ReportInterceptedCommand(intercepted_command_context_.get(), &status);
+  writer_ = stub_->ReportInterceptedCommand(intercepted_command_context_.get(),
+                                            &status);
 }
 
 void InterceptorClient::GetSettings() {
@@ -54,13 +53,11 @@ void InterceptorClient::ReportInterceptedCommand(const char *path,
   writer_.get()->Write(cmd);
 }
 
-void InterceptorClient::Done() {
-  writer_.get()->WritesDone();
-}
+void InterceptorClient::Done() { writer_.get()->WritesDone(); }
 
 InterceptorClient FetchSettings() {
-  auto client = InterceptorClient(
-      grpc::CreateChannel(std::getenv("REPORT_URL"), grpc::InsecureChannelCredentials()));
+  auto client = InterceptorClient(grpc::CreateChannel(
+      std::getenv("REPORT_URL"), grpc::InsecureChannelCredentials()));
   client.GetSettings();
   return client;
 }

@@ -16,7 +16,8 @@ class InterceptorClient {
   InterceptorClient(std::shared_ptr<grpc::Channel> channel);
 
   void GetSettings();
-  void ReportInterceptedCommand(const char *path, char *const argv[], const char *new_path, char *const new_argv[]);
+  void ReportInterceptedCommand(const char *path, char *const argv[],
+                                const char *new_path, char *const new_argv[]);
   void Done();
 
  private:
@@ -27,4 +28,3 @@ class InterceptorClient {
 };
 
 InterceptorClient FetchSettings();
-
