@@ -82,7 +82,8 @@ class Interceptor:
     def _write_compile_commands_db(self):
         with open("{}/compile_commands.json".format(self.cwd), 'w') as file:
             for cmd in self.server.interceptor_service.cmds:
-                cmd = {'arguments': [cmd['replaced_command']] + cmd['replaced_arguments'],
+                cmd = {'arguments': [cmd['replaced_command']] + cmd[
+                    'replaced_arguments'],
                        'directory': cmd['directory'],
                        'output': cmd['output'],
                        'file': cmd['file']}

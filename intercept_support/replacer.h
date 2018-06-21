@@ -1,4 +1,4 @@
-// Copyright (c) 2018 Code Intelligence. All rights reserved.
+// Copyright (c) 2018 University of Bonn.
 
 #pragma once
 
@@ -8,17 +8,18 @@
 
 class Replacer {
  public:
-  Replacer(const InterceptSettings& settings)
-      : settings_(settings), matcher_(settings){};
+  Replacer(const InterceptSettings &settings)
+    : settings_(settings), matcher_(settings) {};
 
-  CompilationCommand Replace(const CompilationCommand& original_cc) const;
+  CompilationCommand Replace(const CompilationCommand &original_cc) const;
 
  private:
-  std::string AdjustCommand(const std::string& command) const;
+  std::string AdjustCommand(const std::string &command) const;
 
-  void AddArguments(const CompilationCommand& original_command,
-                    std::vector<std::string>* arguments) const;
+  void AddArguments(const CompilationCommand &original_command, std::vector<std::string> *arguments) const;
 
-  const InterceptSettings& settings_;
+  bool RemoveArguments(const CompilationCommand &original_cc, std::vector<std::string> *arguments) const;
+
+  const InterceptSettings &settings_;
   Matcher matcher_;
 };

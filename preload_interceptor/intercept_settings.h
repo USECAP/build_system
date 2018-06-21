@@ -1,4 +1,4 @@
-// Copyright (c) 2018 Code Intelligence. All rights reserved.
+// Copyright (c) 2018 University of Bonn.
 
 #pragma once
 

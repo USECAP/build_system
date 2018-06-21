@@ -1,4 +1,4 @@
-// Copyright (c) 2018 Code Intelligence. All rights reserved.
+// Copyright (c) 2018 University of Bonn.
 
 #include "build_system/intercept_support/matcher.h"
 #include "re2/re2.h"

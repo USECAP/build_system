@@ -1,12 +1,11 @@
 import time
+from collections import deque
 
 import grpc
-
-from collections import deque
+from concurrent import futures
 
 from build_system.proto import intercept_pb2
 from build_system.proto import intercept_pb2_grpc
-from concurrent import futures
 
 GET_INTERCEPT_SETTINGS_WAS_CALLED = False
 

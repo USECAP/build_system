@@ -17,6 +17,7 @@ cc_library(
     name = "replacer",
     srcs = ["replacer.cc"],
     hdrs = [
+        "cc_arg_info.h",
         "matcher.h",
         "replacer.h",
         "types.h",

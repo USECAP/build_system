@@ -1,26 +1,50 @@
-// Copyright (c) 2018 Code Intelligence. All rights reserved.
+// Copyright (c) 2018 University of Bonn.
 
 #include "gtest/gtest.h"
 #include "build_system/intercept_support/replacer.h"
 
-TEST(Replacer, Replace) {
-  CompilationCommand orig_cc {"gcc", {"test.cpp", "-o", "test.o"}};
+struct ReplacerTestCase {
+  CompilationCommand cc;
+  std::vector<std::string> add_arguments;
+  std::vector<std::string> remove_arguments;
+  std::vector<std::string> result;
+};
+
+class ReplacerTest : public testing::TestWithParam<ReplacerTestCase> {
+ public:
+  virtual void SetUp() {
+    replacer = new Replacer(settings);
+  }
+
+  virtual void TearDown() {
+    delete (replacer);
+  }
 
   InterceptSettings settings;
-  auto* rule = settings.add_matching_rules();
-  rule->set_match_command("^gcc");
+  Replacer *replacer;
+};
+
+INSTANTIATE_TEST_CASE_P(Test, ReplacerTest, testing::Values(
+  ReplacerTestCase{{"gcc", {"test.cpp", "-O3", "-o", "test.o"}},
+                   {"-O0"}, {"-O3"}, {"test.cpp", "-o", "test.o", "-O0"}},
+  ReplacerTestCase{{"gcc", {"test.cpp", "-I", "DIR", "-O2", "-o", "test.o"}},
+                   {"-O0"}, {"-O2", "-I"}, {"test.cpp", "-o", "test.o", "-O0"}}
+));
+
+TEST_P(ReplacerTest, GCC) {
+  auto *rule = settings.add_matching_rules();
+  rule->set_match_command("gcc");
   rule->set_replace_command("afl-gcc");
-  rule->add_add_arguments("-g");
-  rule->add_add_arguments("-O0");
+  for (const auto &arg : GetParam().add_arguments) {
+    rule->add_add_arguments(arg);
+  }
+  for (const auto &arg : GetParam().remove_arguments) {
+    rule->add_remove_arguments(arg);
+  }
 
-  Replacer r(settings);
-
-  CompilationCommand adjusted_cc = r.Replace(orig_cc);
-  ASSERT_EQ(adjusted_cc.command, "afl-gcc");
-  ASSERT_EQ(adjusted_cc.arguments.size(), 5);
-  ASSERT_EQ(adjusted_cc.arguments[0], "test.cpp");
-  ASSERT_EQ(adjusted_cc.arguments[1], "-o");
-  ASSERT_EQ(adjusted_cc.arguments[2], "test.o");
-  ASSERT_EQ(adjusted_cc.arguments[3], "-g");
-  ASSERT_EQ(adjusted_cc.arguments[4], "-O0");
+  CompilationCommand adjusted_cc = replacer->Replace(GetParam().cc);
+  ASSERT_EQ(adjusted_cc.command, rule->replace_command());
+  ASSERT_EQ(adjusted_cc.arguments.size(), GetParam().result.size());
+  ASSERT_TRUE(std::equal(adjusted_cc.arguments.begin(), adjusted_cc.arguments.end(), GetParam().result.begin()));
 }
+
