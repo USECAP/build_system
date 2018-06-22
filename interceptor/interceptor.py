@@ -40,15 +40,18 @@ class Interceptor:
 
     def _parse_arguments(self, argv):
         parser = argparse.ArgumentParser()
-        parser.add_argument("--fuzzer",
-                            help="use fuzzer configuration", type=str,
-                            default="default")
-        parser.add_argument("--match_compiler",
-                            type=str, default="",
-                            help="compiler call which might be intercepted")
-        parser.add_argument("--create_compiler_database",
-                            type=bool, default=False,
-                            help="whether a compiler database should be created")
+        parser.add_argument(
+            "--fuzzer",
+            help="use fuzzer configuration", type=str,
+            default="default")
+        parser.add_argument(
+            "--match_compiler",
+            type=str, default="",
+            help="compiler call which might be intercepted")
+        parser.add_argument(
+            "--create_compiler_database",
+            type=bool, default=False,
+            help="whether a compiler database should be created")
         parser.add_argument(
             "--config",
             help="use fuzzer configuration",

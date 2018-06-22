@@ -92,3 +92,10 @@ py_test(
         grpcio_requirement("setuptools"),
     ],
 )
+
+sh_test(
+    name = "lint",
+    size = "small",
+    srcs = ["test/lint.sh"],
+    data = glob(["**/*.py"]),
+)

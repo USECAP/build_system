@@ -60,7 +60,8 @@ class IntegrationTests(unittest.TestCase):
             self.server.interceptor_service.cmds[1]['replaced_command'],
             u'/usr/bin/gcc')
         self.assertListEqual(
-            list(self.server.interceptor_service.cmds[1]['replaced_arguments']),
+            list(
+                self.server.interceptor_service.cmds[1]['replaced_arguments']),
             [u'hello.c', u'-o', u'foo'])
 
     def test_intercept_method(self):

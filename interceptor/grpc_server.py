@@ -75,7 +75,7 @@ class InterceptorClient(object):
 
 class InterceptorService(intercept_pb2_grpc.InterceptorServicer):
     # Known C compiler executable name patterns.
-    COMPILER_PATTERNS_CC = '''
+    COMPILER_PATTERNS_CC = r'''
         ^([^-]*-)*[mg]cc(-\d+(\.\d+){0,2})?$|
         ^([^-]*-)*clang(-\d+(\.\d+){0,2})?$|
         ^(|i)cc$|^(g|)xlc$'
