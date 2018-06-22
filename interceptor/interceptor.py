@@ -57,7 +57,7 @@ class Interceptor:
         self.args = parser.parse_args(argv)
 
     def _parse_fuzzer_config(self):
-        config = yaml.load(self.args.config)
+        config = yaml.safe_load(self.args.config)
         config = config[self.args.fuzzer]
         self.settings["replace_command"] = config["compiler"]
         self.settings["add_arguments"] = config["add_arguments"]

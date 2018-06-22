@@ -63,13 +63,13 @@ class InterceptorClient(object):
     def send_update(self, original_command, original_arguments,
                     replaced_command, replaced_arguments):
         stub = intercept_pb2_grpc.InterceptorStub(self.channel)
-        commands = [
-            intercept_pb2.InterceptedCommand(original_command=original_command,
-                                             original_arguments=original_arguments,
-                                             replaced_command=replaced_command,
-                                             replaced_arguments=replaced_arguments)
-        ]
-        response = stub.ReportInterceptedCommand(iter(commands))
+        command = intercept_pb2.InterceptedCommand(
+            original_command=original_command,
+            original_arguments=original_arguments,
+            replaced_command=replaced_command,
+            replaced_arguments=replaced_arguments)
+
+        response = stub.ReportInterceptedCommand(command)
         return response
 
 
@@ -100,17 +100,16 @@ class InterceptorService(intercept_pb2_grpc.InterceptorServicer):
         ]
         return intercept_pb2.InterceptSettings(matching_rules=matching_rules)
 
-    def ReportInterceptedCommand(self, request_iterator, context):
-        for cmd in request_iterator:
-            self.cmds.append(
-                {'original_command': str(cmd.original_command),
-                 'original_arguments': list(cmd.original_arguments),
-                 'replaced_command': str(cmd.replaced_command),
-                 'replaced_arguments': list(cmd.replaced_arguments),
-                 'directory': str(cmd.directory),
-                 'file': str(cmd.file),
-                 'output': str(cmd.output)})
-            self.received += 1
+    def ReportInterceptedCommand(self, command, context):
+        self.cmds.append(
+            {'original_command': str(command.original_command),
+             'original_arguments': list(command.original_arguments),
+             'replaced_command': str(command.replaced_command),
+             'replaced_arguments': list(command.replaced_arguments),
+             'directory': str(command.directory),
+             'file': str(command.file),
+             'output': str(command.output)})
+        self.received += 1
 
         return intercept_pb2.Status(
             received=self.received, processed=self.received - len(self.cmds),
