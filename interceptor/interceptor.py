@@ -8,10 +8,12 @@ import yaml
 
 from build_system.interceptor.grpc_server import InterceptorServer
 
-MODULE_PATH = os.path.dirname(sys.modules[__name__].__file__)
-FUZZER_CONFIGS_PATH = os.path.join(MODULE_PATH, 'config', 'fuzzer')
-LD_PRELOAD_LIB = os.path.join(MODULE_PATH,
-                              "../preload_interceptor/preload_interceptor.so")
+from pathlib import Path
+
+MODULE_PATH = Path(sys.modules[__name__].__file__).parent
+FUZZER_CONFIGS_PATH = Path(MODULE_PATH, 'config', 'fuzzer')
+LD_PRELOAD_LIB = Path(MODULE_PATH,
+                      "../preload_interceptor/preload_interceptor.so")
 
 
 class Interceptor:

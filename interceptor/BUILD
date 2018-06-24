@@ -32,6 +32,11 @@ py_library(
     ],
 )
 
+py_library(
+    name = "split_compile_command",
+    srcs = ["split_compile_command.py"],
+)
+
 py_binary(
     name = "intercept",
     srcs = ["main.py"],
@@ -50,9 +55,9 @@ py_library(
     ],
     deps = [
         "//build_system/proto:py",
-        grpcio_requirement("setuptools"),
-        grpcio_requirement("grpcio"),
-        grpcio_requirement("protobuf"),
+        requirement("setuptools"),
+        requirement("grpcio"),
+        requirement("protobuf"),
     ],
 )
 
@@ -66,9 +71,19 @@ py_test(
     deps = [
         "//build_system/interceptor:grpc_server",
         "//build_system/proto:py",
-        grpcio_requirement("setuptools"),
-        grpcio_requirement("grpcio"),
-        grpcio_requirement("protobuf"),
+        requirement("setuptools"),
+        requirement("grpcio"),
+        requirement("protobuf"),
+    ],
+)
+
+py_test(
+    name = "split_argv_test",
+    size = "small",
+    srcs = ["test/split_argv_test.py"],
+    imports = ["."],
+    deps = [
+        ":split_compile_command",
     ],
 )
 
@@ -87,9 +102,9 @@ py_test(
         ":interceptor",
         "//build_system/interceptor:grpc_server",
         "//build_system/proto:py",
-        grpcio_requirement("grpcio"),
-        grpcio_requirement("protobuf"),
-        grpcio_requirement("setuptools"),
+        requirement("grpcio"),
+        requirement("protobuf"),
+        requirement("setuptools"),
     ],
 )
 

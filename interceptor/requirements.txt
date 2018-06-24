@@ -1,1 +1,6 @@
 pyyaml
+grpcio
+protobuf
+setuptools
+pytest
+flake8

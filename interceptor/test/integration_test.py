@@ -2,14 +2,17 @@ import os
 import subprocess
 import unittest
 
+from pathlib import Path
+
 from build_system.interceptor.grpc_server import InterceptorServer
 from build_system.interceptor.interceptor import main
 
-LD_PRELOAD_PATH = os.path.abspath(
-    "build_system/preload_interceptor/preload_interceptor.so")
-INTERCEPT_PATH = os.path.abspath("build_system/interceptor/intercept")
-TEST_PATH = os.path.abspath("build_system/interceptor/test")
-BUILD_SH_PATH = "{}/{}".format(TEST_PATH, "build.sh")
+LD_PRELOAD_PATH = Path(
+    "build_system", "preload_interceptor", "preload_interceptor.so").resolve()
+INTERCEPT_PATH = os.path.abspath(
+    Path("build_system", "interceptor", "intercept"))
+TEST_PATH = Path("build_system", "interceptor", "test").resolve()
+BUILD_SH_PATH = Path(TEST_PATH, "build.sh").resolve()
 
 
 class IntegrationTests(unittest.TestCase):
