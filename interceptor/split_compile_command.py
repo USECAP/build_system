@@ -3,7 +3,8 @@
 # This code is part of Bear.
 
 import re
-import os
+
+from pathlib import Path
 
 
 IGNORED_FLAGS = {
@@ -42,8 +43,16 @@ IGNORED_FLAGS = {
 
 
 class SplitCompileCommand:
+    """
+    The SplitCompileCommand class interprets the command line arguments of a
+    compiler call
+    """
 
     def __init__(self, command):
+        """
+        Constructor
+        :param command: compiler command
+        """
         self.compiler = ""
         self.compile_argv = []
         self.file = []
@@ -98,7 +107,7 @@ class SplitCompileCommand:
             '.asm': 'assembly'
         }
 
-        __, extension = os.path.splitext(os.path.basename(filename))
+        extension = Path(filename).suffix
         return mapping.get(extension)
 
     def _split_compiler(self, command):
@@ -106,7 +115,7 @@ class SplitCompileCommand:
         command = command.split(" ")
 
         if len(command):
-            self.compiler = os.path.basename(command[0])
+            self.compiler = Path(command[0]).name
             self.compile_argv = command[1:]
             return True
         else:

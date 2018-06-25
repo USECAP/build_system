@@ -1,3 +1,6 @@
+"""
+Module for the gRPC Server for exec interception
+"""
 import time
 from collections import deque
 
@@ -31,15 +34,24 @@ class InterceptorServer(object):
             '[::]:{server_port}'.format(server_port=server_port))
 
     def start(self):
+        """
+        Starts the gRPC server
+        :return:
+        """
         self.server.start()
 
     def stop(self):
+        """
+        Stops the gRPC server
+        :return:
+        """
         self.server.stop(0)
 
     def await_termination(self):
         """
         server.start() doesn't block so we explicitly block here unless someone
         keyboard-exits us.
+        This is needed if the server is started on the command line
         :return:
         """
         try:
@@ -51,17 +63,33 @@ class InterceptorServer(object):
 
 
 class InterceptorClient(object):
-
+    """
+    Interceptor client to simulate calls (needed by testing)
+    :param host: host on which the gRPC server is running
+    :param port: port on which the gRPC server is running
+    """
     def __init__(self, host, port):
         self.channel = grpc.insecure_channel("{}:{}".format(host, port))
 
     def get_settings(self):
+        """
+        Command to get the InterceptSettings from the server
+        :return:
+        """
         stub = intercept_pb2_grpc.InterceptorStub(self.channel)
         return stub.GetInterceptSettings(
             intercept_pb2.InterceptSettingsRequest())
 
     def send_update(self, original_command, original_arguments,
                     replaced_command, replaced_arguments):
+        """
+        Sends periodical updates to server
+        :param original_command: original command, e.g., gcc
+        :param original_arguments: e.g. -I foo
+        :param replaced_command:  e.g. clang
+        :param replaced_arguments: e.g. -fsanitize=address
+        :return:
+        """
         stub = intercept_pb2_grpc.InterceptorStub(self.channel)
         command = intercept_pb2.InterceptedCommand(
             original_command=original_command,
@@ -74,16 +102,27 @@ class InterceptorClient(object):
 
 
 class InterceptorService(intercept_pb2_grpc.InterceptorServicer):
-    # Known C compiler executable name patterns.
+    """
+    The service which is used by the gRPC server
+    """
+
+    # Known C compiler executable name patterns (used as default if no compiler
+    # name is given
     COMPILER_PATTERNS_CC = r'''
         ^([^-]*-)*[mg]cc(-\d+(\.\d+){0,2})?$|
         ^([^-]*-)*clang(-\d+(\.\d+){0,2})?$|
         ^(|i)cc$|^(g|)xlc$'
     '''
 
+    # To test whether the settings have been retrieved by the client at least
+    # once
     GET_INTERCEPT_SETTINGS_WAS_CALLED = False
 
     def __init__(self, **kwargs):
+        """
+        Constructor
+        :param kwargs: not specified so far
+        """
         self.cmds = deque()
         self.received = 0
 
@@ -92,6 +131,16 @@ class InterceptorService(intercept_pb2_grpc.InterceptorServicer):
                              replace_command=None,
                              add_arguments=None,
                              remove_arguments=None):
+        """
+
+        :param request: request object
+        :param context: context object
+        :param original_command: original command, e.g., gcc
+        :param original_arguments: e.g. -I foo
+        :param replaced_command:  e.g. clang
+        :param replaced_arguments: e.g. -fsanitize=address
+        :return: InterceptSettings
+        """
         self.GET_INTERCEPT_SETTINGS_WAS_CALLED = True
         matching_rules = [
             intercept_pb2.MatchingRule(
@@ -101,6 +150,12 @@ class InterceptorService(intercept_pb2_grpc.InterceptorServicer):
         return intercept_pb2.InterceptSettings(matching_rules=matching_rules)
 
     def ReportInterceptedCommand(self, command, context):
+        """
+        Method called if an update is sent
+        :param command: the executed command details
+        :param context:
+        :return: Status message
+        """
         self.cmds.append(
             {'original_command': str(command.original_command),
              'original_arguments': list(command.original_arguments),

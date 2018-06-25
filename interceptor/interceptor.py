@@ -1,3 +1,6 @@
+"""
+Module for intercepting exec calls
+"""
 import argparse
 import json
 import os
@@ -17,20 +20,28 @@ LD_PRELOAD_LIB = Path(MODULE_PATH,
 
 
 class Interceptor:
+    """
+    Interceptor intercepts all exec commands, filters compiler calls and writes
+    those in a compilation database
+
+
+    :param argv:    argument vector, e.g.: intercept --options -- make
+    :param cwd:  specify current working directory if needed
+    """
     def __init__(self, argv, cwd=None):
         self.returncode = -1
         self.settings = {}
         try:
             split_index = argv.index('--')
             self.command = argv[split_index + 1:]
-            self._parse_arguments(argv[:split_index])
+            self.args = self._parse_arguments(argv[:split_index])
         except IndexError:
             self.args = None
             print("Wrong usage")
             sys.exit(-1)
 
         if cwd is None:
-            self.cwd = os.path.abspath(os.getcwd())
+            self.cwd = Path(os.getcwd())
         else:
             self.cwd = cwd
         self.server = InterceptorServer(**self.settings)
@@ -41,6 +52,11 @@ class Interceptor:
             self._write_compile_commands_db()
 
     def _parse_arguments(self, argv):
+        """
+
+        :param argv: parses the raw argv vector
+        :return: parsed arguments
+        """
         parser = argparse.ArgumentParser()
         parser.add_argument(
             "--fuzzer",
@@ -58,10 +74,14 @@ class Interceptor:
             "--config",
             help="use fuzzer configuration",
             type=argparse.FileType("r"),
-            default=os.path.join(FUZZER_CONFIGS_PATH, "default.yaml"))
-        self.args = parser.parse_args(argv)
+            default=str(Path(FUZZER_CONFIGS_PATH, "default.yaml")))
+        return parser.parse_args(argv)
 
     def _parse_fuzzer_config(self):
+        """
+        Loads and parses the fuzzer settings
+        :return: parser settings
+        """
         config = yaml.safe_load(self.args.config)
         config = config[self.args.fuzzer]
         self.settings["replace_command"] = config["compiler"]
@@ -70,12 +90,24 @@ class Interceptor:
         return self.settings
 
     def _parse_settings(self):
+        """
+        Parses the fuzzer settings
+
+        First it loads the fuzzer configuration, then it optionally takes a
+        matching compiler not listed in default compiler names,
+        e.g. arm-none-eabi-gcc
+        :return:
+        """
         self._parse_fuzzer_config()
         if self.args.match_compiler:
             self.settings["match_command"] = self.args.match_compiler
 
     def _call(self):
-        if not os.path.isfile(LD_PRELOAD_LIB):
+        """
+        Makes the build process call given by the user (e.g. make)
+        :return: returncode of the build process call
+        """
+        if not LD_PRELOAD_LIB.is_file():
             print("LD_PRELOAD_LIB {} doesn't exist...".format(LD_PRELOAD_LIB))
             return -1
         env = os.environ.copy()
@@ -96,6 +128,15 @@ class Interceptor:
 
 
 def main(argv=sys.argv[1:], cwd=None):
+    """
+    Main function to execute and intercept the build process given by the user.
+    Take note that this function can be called from testcode to increase
+    testing coverage.
+
+    :param argv: argument vector without the program name itself
+    :param cwd: current working directory
+    :return: returncode of the build call
+    """
     interceptor = Interceptor(argv, cwd=cwd)
 
     return interceptor.returncode

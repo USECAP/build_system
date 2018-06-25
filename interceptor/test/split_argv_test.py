@@ -3,6 +3,9 @@ from build_system.interceptor.split_compile_command import SplitCompileCommand
 
 
 class SplitArgvTests(unittest.TestCase):
+    """
+    Test class to test the compilation argv interpreter
+    """
     CMD = "gcc -I /usr/include -I /usr/local/include -D LINUX -O3 -c main.c"
 
     def test_single_file(self):

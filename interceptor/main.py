@@ -1,3 +1,6 @@
+"""
+File from which the intercept command is generated
+"""
 import sys
 
 from build_system.interceptor.interceptor import main

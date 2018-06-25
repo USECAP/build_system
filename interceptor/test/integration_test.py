@@ -16,6 +16,9 @@ BUILD_SH_PATH = Path(TEST_PATH, "build.sh").resolve()
 
 
 class IntegrationTests(unittest.TestCase):
+    """
+    Class for doing the integration tests for the interceptor
+    """
     server = None
 
     def setUp(self):
@@ -28,32 +31,32 @@ class IntegrationTests(unittest.TestCase):
     def tearDown(self):
         self.server.stop()
 
-    def test_ld_preload_exists(self):
-        self.assertTrue(os.path.isfile(LD_PRELOAD_PATH), msg="""
+    def test_ld_preload_and_buildfile_exists(self):
+        """Check if the preload and build files even exists"""
+        self.assertTrue(
+            LD_PRELOAD_PATH.is_file(), msg="""
                         LD_PRELOAD lib not found
-                        current wd: %s
-                        current wd contents: %s""" % (
-            os.getcwd(), os.listdir(os.getcwd())))
-
-    def test_build_sh_exists(self):
-        self.assertTrue(os.path.isfile(BUILD_SH_PATH), msg="""
+                        current wd: {}
+                        current wd contents: {}""".format(
+                os.getcwd(), os.listdir(os.getcwd())))
+        self.assertTrue(
+            BUILD_SH_PATH.is_file(), msg="""
                         build.sh not found
-                        current wd: %s
-                        current wd contents: %s""" % (
-            os.getcwd(), os.listdir(os.getcwd())))
+                        current wd: {}
+                        current wd contents: {}""".format(
+                os.getcwd(), os.listdir(os.getcwd())))
 
     def test_preload_lib_requests_settings(self):
-        self.assertTrue(os.path.isfile(BUILD_SH_PATH),
-                        msg="build file doesn't exist")
-        subprocess.call([BUILD_SH_PATH], cwd=TEST_PATH, env=self.env)
+        """Loads the preload through environment and checks whether the
+        settings were retrieved"""
+        subprocess.call([str(BUILD_SH_PATH)], cwd=str(TEST_PATH), env=self.env)
         self.assertTrue(
             self.server.interceptor_service.GET_INTERCEPT_SETTINGS_WAS_CALLED,
             msg="Preload Lib did not get settings!")
 
     def test_receive_commands(self):
-        self.assertTrue(os.path.isfile(BUILD_SH_PATH),
-                        msg="build file doesn't exist")
-        returncode = subprocess.call([BUILD_SH_PATH], cwd=TEST_PATH,
+        """Checks whether the interceptor is able to receive commands"""
+        returncode = subprocess.call([str(BUILD_SH_PATH)], cwd=str(TEST_PATH),
                                      env=self.env)
         self.assertEqual(returncode, 0, msg="Build couldn't be executed")
         self.assertTrue(self.server.interceptor_service.cmds,
@@ -61,11 +64,11 @@ class IntegrationTests(unittest.TestCase):
 
         self.assertEqual(
             self.server.interceptor_service.cmds[1]['replaced_command'],
-            u'/usr/bin/gcc')
+            '/usr/bin/gcc')
         self.assertListEqual(
             list(
                 self.server.interceptor_service.cmds[1]['replaced_arguments']),
-            [u'hello.c', u'-o', u'foo'])
+            ['hello.c', '-o', 'foo'])
 
     def test_intercept_method(self):
         returncode = main(["--", BUILD_SH_PATH], cwd=TEST_PATH)
@@ -74,12 +77,12 @@ class IntegrationTests(unittest.TestCase):
 
     def test_intercept_script(self):
         returncode = subprocess.call([INTERCEPT_PATH, "--", BUILD_SH_PATH],
-                                     cwd=TEST_PATH)
+                                     cwd=str(TEST_PATH))
         self.assertEqual(returncode, 0, msg="intercept not executed")
 
     def test_intercept_parser_argument(self):
         cmd = [INTERCEPT_PATH, "--fuzzer", "libfuzzer", "--", BUILD_SH_PATH]
-        returncode = subprocess.call(cmd, cwd=TEST_PATH)
+        returncode = subprocess.call(cmd, cwd=str(TEST_PATH))
         self.assertEqual(returncode, 0, msg="intercept not executed")
 
 
