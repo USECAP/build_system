@@ -28,6 +28,7 @@ py_library(
         "//build_system/preload_interceptor:preload_interceptor.so",
     ],
     deps = [
+        ":intercept_settings",
         requirement("pyyaml"),
     ],
 )
@@ -113,4 +114,29 @@ sh_test(
     size = "small",
     srcs = ["test/lint.sh"],
     data = glob(["**/*.py"]),
+)
+
+py_library(
+    name = "intercept_settings",
+    srcs = ["intercept_settings.py"],
+    data = [
+        ":fuzzer_configs",
+    ],
+    deps = [
+        "//build_system/proto:py",
+        requirement("pyyaml"),
+        requirement("grpcio"),
+        requirement("protobuf"),
+        requirement("setuptools"),
+    ],
+)
+
+py_test(
+    name = "intercept_settings_test",
+    size = "small",
+    srcs = ["test/intercept_settings_test.py"],
+    data = ["test/test_fuzzer_config.yaml"],
+    deps = [
+        ":intercept_settings",
+    ],
 )

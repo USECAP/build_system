@@ -1,4 +1,5 @@
 import unittest
+
 from build_system.interceptor.grpc_server import (InterceptorServer,
                                                   InterceptorClient)
 
@@ -7,6 +8,7 @@ class GrpcTests(unittest.TestCase):
     """
     Tests the gRPC server/clients
     """
+
     def setUp(self):
         self.server = InterceptorServer()
         self.server.start()

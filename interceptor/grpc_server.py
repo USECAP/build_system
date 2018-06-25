@@ -20,10 +20,12 @@ class InterceptorServer(object):
     :return: object
     """
 
-    def __init__(self, interceptor_service=None, server_port=0, **kwargs):
-
+    def __init__(self, intercept_settings=None, interceptor_service=None,
+                 server_port=0):
+        if not intercept_settings:
+            intercept_settings = intercept_pb2.InterceptSettings()
         if not interceptor_service:
-            self.interceptor_service = InterceptorService(**kwargs)
+            self.interceptor_service = InterceptorService(intercept_settings)
         else:
             self.interceptor_service = interceptor_service
 
@@ -68,6 +70,7 @@ class InterceptorClient(object):
     :param host: host on which the gRPC server is running
     :param port: port on which the gRPC server is running
     """
+
     def __init__(self, host, port):
         self.channel = grpc.insecure_channel("{}:{}".format(host, port))
 
@@ -106,48 +109,28 @@ class InterceptorService(intercept_pb2_grpc.InterceptorServicer):
     The service which is used by the gRPC server
     """
 
-    # Known C compiler executable name patterns (used as default if no compiler
-    # name is given
-    COMPILER_PATTERNS_CC = r'''
-        ^([^-]*-)*[mg]cc(-\d+(\.\d+){0,2})?$|
-        ^([^-]*-)*clang(-\d+(\.\d+){0,2})?$|
-        ^(|i)cc$|^(g|)xlc$'
-    '''
-
     # To test whether the settings have been retrieved by the client at least
     # once
     GET_INTERCEPT_SETTINGS_WAS_CALLED = False
 
-    def __init__(self, **kwargs):
+    def __init__(self, intercept_settings):
         """
         Constructor
-        :param kwargs: not specified so far
+        :param intercept_settings: Settings for the interceptor
         """
+        self._intercept_settings = intercept_settings
         self.cmds = deque()
         self.received = 0
 
-    def GetInterceptSettings(self, request, context,
-                             match_command=COMPILER_PATTERNS_CC,
-                             replace_command=None,
-                             add_arguments=None,
-                             remove_arguments=None):
+    def GetInterceptSettings(self, request, context):
         """
-
+        Get the InterceptSettings
         :param request: request object
         :param context: context object
-        :param original_command: original command, e.g., gcc
-        :param original_arguments: e.g. -I foo
-        :param replaced_command:  e.g. clang
-        :param replaced_arguments: e.g. -fsanitize=address
         :return: InterceptSettings
         """
         self.GET_INTERCEPT_SETTINGS_WAS_CALLED = True
-        matching_rules = [
-            intercept_pb2.MatchingRule(
-                match_command=match_command, replace_command=replace_command,
-                add_arguments=add_arguments, remove_arguments=remove_arguments)
-        ]
-        return intercept_pb2.InterceptSettings(matching_rules=matching_rules)
+        return self._intercept_settings
 
     def ReportInterceptedCommand(self, command, context):
         """

@@ -7,11 +7,10 @@ import os
 import subprocess
 import sys
 
-import yaml
-
-from build_system.interceptor.grpc_server import InterceptorServer
-
 from pathlib import Path
+
+from build_system.interceptor import intercept_settings
+from build_system.interceptor.grpc_server import InterceptorServer
 
 MODULE_PATH = Path(sys.modules[__name__].__file__).parent
 FUZZER_CONFIGS_PATH = Path(MODULE_PATH, 'config', 'fuzzer')
@@ -28,9 +27,9 @@ class Interceptor:
     :param argv:    argument vector, e.g.: intercept --options -- make
     :param cwd:  specify current working directory if needed
     """
+
     def __init__(self, argv, cwd=None):
         self.returncode = -1
-        self.settings = {}
         try:
             split_index = argv.index('--')
             self.command = argv[split_index + 1:]
@@ -44,16 +43,17 @@ class Interceptor:
             self.cwd = Path(os.getcwd())
         else:
             self.cwd = cwd
-        self.server = InterceptorServer(**self.settings)
+        self.server = InterceptorServer(
+            intercept_settings=intercept_settings.parse_fuzzer_config(
+                self.args.config, self.args.fuzzer))
         self.server.start()
-        self._parse_settings()
         self.returncode = self._call()
+        self.server.stop()
         if self.args.create_compiler_database:
             self._write_compile_commands_db()
 
     def _parse_arguments(self, argv):
         """
-
         :param argv: parses the raw argv vector
         :return: parsed arguments
         """
@@ -76,31 +76,6 @@ class Interceptor:
             type=argparse.FileType("r"),
             default=str(Path(FUZZER_CONFIGS_PATH, "default.yaml")))
         return parser.parse_args(argv)
-
-    def _parse_fuzzer_config(self):
-        """
-        Loads and parses the fuzzer settings
-        :return: parser settings
-        """
-        config = yaml.safe_load(self.args.config)
-        config = config[self.args.fuzzer]
-        self.settings["replace_command"] = config["compiler"]
-        self.settings["add_arguments"] = config["add_arguments"]
-        self.settings["remove_arguments"] = config["remove_arguments"]
-        return self.settings
-
-    def _parse_settings(self):
-        """
-        Parses the fuzzer settings
-
-        First it loads the fuzzer configuration, then it optionally takes a
-        matching compiler not listed in default compiler names,
-        e.g. arm-none-eabi-gcc
-        :return:
-        """
-        self._parse_fuzzer_config()
-        if self.args.match_compiler:
-            self.settings["match_command"] = self.args.match_compiler
 
     def _call(self):
         """
