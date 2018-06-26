@@ -25,10 +25,10 @@ class GrpcTests(unittest.TestCase):
         self.client.send_update("gcc", "-v", "clang", "-v")
         self.client.send_update("gcc", "-v", "clang", "-v")
         response = self.client.send_update("gcc", "-v", "clang", "-v")
-        self.assertEquals(response.received, 4)
+        self.assertEqual(response.received, 4)
         self.assertTrue(response.message == "4 commands received")
-        self.assertEquals(response.processed, 0)
-        self.assertEquals(len(self.server.interceptor_service.cmds), 4)
+        self.assertEqual(response.processed, 0)
+        self.assertEqual(len(self.server.interceptor_service.cmds), 4)
 
 
 if __name__ == '__main__':

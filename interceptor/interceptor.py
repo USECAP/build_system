@@ -53,6 +53,10 @@ class Interceptor:
         if self.args.create_compiler_database:
             self._write_compile_commands_db()
 
+    def __del__(self):
+        if self.args and self.args.config:
+            self.args.config.close()
+
     def _parse_arguments(self, argv):
         """
         :param argv: parses the raw argv vector
