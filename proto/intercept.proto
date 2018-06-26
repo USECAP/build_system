@@ -27,7 +27,6 @@ message Status {
   int32 received = 1;
   int32 processed = 2;
   string message = 3;
-
 }
 
 message InterceptSettingsRequest {}

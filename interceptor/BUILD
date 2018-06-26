@@ -101,6 +101,7 @@ py_test(
     deps = [
         ":intercept",
         ":interceptor",
+        ":split_compile_command",
         "//build_system/interceptor:grpc_server",
         "//build_system/proto:py",
         requirement("grpcio"),

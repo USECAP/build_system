@@ -11,6 +11,7 @@ from pathlib import Path
 
 from build_system.interceptor import intercept_settings
 from build_system.interceptor.grpc_server import InterceptorServer
+from build_system.interceptor.split_compile_command import SplitCompileCommand
 
 MODULE_PATH = Path(sys.modules[__name__].__file__).parent
 FUZZER_CONFIGS_PATH = Path(MODULE_PATH, 'config', 'fuzzer')
@@ -94,11 +95,12 @@ class Interceptor:
     def _write_compile_commands_db(self):
         with open("{}/compile_commands.json".format(self.cwd), 'w') as file:
             for cmd in self.server.interceptor_service.cmds:
+                compile_file = SplitCompileCommand(self.command)
                 cmd = {'arguments': [cmd['replaced_command']] + cmd[
                     'replaced_arguments'],
                        'directory': cmd['directory'],
                        'output': cmd['output'],
-                       'file': cmd['file']}
+                       'file': compile_file.get_source_file()}
                 json.dump(cmd, file)
 
 
