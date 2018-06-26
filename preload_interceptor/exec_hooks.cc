@@ -3,9 +3,10 @@
 #include <dlfcn.h>
 #include <unistd.h>
 #include <cstdarg>
+#include <iostream>
 #include <sstream>
 #include <vector>
-#include <iostream>
+#include "build_system/intercept_support/replacer.h"
 #include "intercept_settings.h"
 
 namespace {
@@ -37,19 +38,32 @@ InterceptSettings *settings() {
   return &*settings_;
 }
 
+void unset_ld_preload() { unsetenv("LD_PRELOAD"); }
+
+void unset_ld_preload(char *const** envp) {
+  // TODO Clear environment from parameter
+}
+
 template <typename... Args>
 int intercept(const char *fn_name, const char *path, char *const argv[],
-              Args... args) {
-  settings();
-  {
-    InterceptorClient client(grpc::CreateChannel(
-        std::getenv("REPORT_URL"), grpc::InsecureChannelCredentials()));
-    client.ReportInterceptedCommand(path, argv, path, argv);
+              Args... envp) {
+  auto settings_ = settings();
+  Replacer replacer(*settings_);
+  CompilationCommand cc(path, argv);
+  auto replaced_cc = replacer.Replace(cc);
+
+  if (replaced_cc) {
+    unset_ld_preload(&envp...);
+    {
+      InterceptorClient client(grpc::CreateChannel(
+          std::getenv("REPORT_URL"), grpc::InsecureChannelCredentials()));
+      client.ReportInterceptedCommand(cc, *replaced_cc);
+    }
   }
 
   using exec_type = int (*)(const char *, char *const *, Args...);
   auto call = reinterpret_cast<exec_type>(dlsym(RTLD_NEXT, fn_name));
-  return call(path, argv, args...);
+  return call(path, argv, envp...);
 }
 
 }  // namespace

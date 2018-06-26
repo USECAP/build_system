@@ -145,8 +145,7 @@ class InterceptorService(intercept_pb2_grpc.InterceptorServicer):
              'replaced_command': str(command.replaced_command),
              'replaced_arguments': list(command.replaced_arguments),
              'directory': str(command.directory),
-             'file': str(command.file),
-             'output': str(command.output)})
+             })
         self.received += 1
 
         return intercept_pb2.Status(

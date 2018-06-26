@@ -4,7 +4,7 @@
 #include "absl/strings/string_view.h"
 #include "absl/types/optional.h"
 
-#include "build_system/intercept_support/types.h"
+#include "build_system/intercept_support/compilation_command.h"
 #include "build_system/proto/intercept.pb.h"
 
 class Matcher {
@@ -12,8 +12,8 @@ class Matcher {
   Matcher(const InterceptSettings& settings) : settings_(settings){};
 
   absl::optional<MatchingRule> GetMatchingRule(
-  const std::string &command) const ;
-  bool doesCompileSharedLib (const CompilationCommand& cc) const;
+      const std::string& command_path) const;
+  bool doesCompileSharedLib(const CompilationCommand& cc) const;
 
  private:
   const InterceptSettings& settings_;

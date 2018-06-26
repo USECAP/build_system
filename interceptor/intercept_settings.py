@@ -8,11 +8,11 @@ from build_system.proto.intercept_pb2 import InterceptSettings, MatchingRule
 
 DEFAULT_CC_RE = r"^([^-]*-)*[mg]cc(-\d+(\.\d+){0,2})?$|" \
                 r"^([^-]*-)*clang(-\d+(\.\d+){0,2})?$|" \
-                r"^(|i)cc$|^(g|)xlc$'"
+                r"^(|i)cc$|^(g|)xlc$"
 
 DEFAULT_CXX_RE = r"^([^-]*-)*[mg]\+\+(-\d+(\.\d+){0,2})?$|" \
                  r"^([^-]*-)*clang\+\+(-\d+(\.\d+){0,2})?$|" \
-                 r"^(|i)cc$|^(g|)xlc$'"  # TODO what are the c++ variants here?
+                 r"^(|i)cc$|^(g|)xlc$"  # TODO what are the c++ variants here?
 
 
 class FuzzerNotFound(Exception):

@@ -5,6 +5,7 @@ import unittest
 from pathlib import Path
 
 from build_system.interceptor.grpc_server import InterceptorServer
+from build_system.interceptor.intercept_settings import parse_fuzzer_config
 from build_system.interceptor.interceptor import main
 
 LD_PRELOAD_PATH = Path(
@@ -22,7 +23,10 @@ class IntegrationTests(unittest.TestCase):
     server = None
 
     def setUp(self):
-        self.server = InterceptorServer()
+        yaml_path = "build_system/interceptor/config/fuzzer/default.yaml"
+        with open(yaml_path, "r") as f:
+            self.server = InterceptorServer(
+                intercept_settings=parse_fuzzer_config(f, "afl-gcc"))
         self.server.start()
         self.env = os.environ.copy()
         self.env["LD_PRELOAD"] = LD_PRELOAD_PATH
@@ -58,17 +62,17 @@ class IntegrationTests(unittest.TestCase):
         """Checks whether the interceptor is able to receive commands"""
         returncode = subprocess.call([str(BUILD_SH_PATH)], cwd=str(TEST_PATH),
                                      env=self.env)
+        cmds = self.server.interceptor_service.cmds
         self.assertEqual(returncode, 0, msg="Build couldn't be executed")
-        self.assertTrue(self.server.interceptor_service.cmds,
-                        "Commands are empty")
+        self.assertTrue(cmds, "Commands are empty")
 
         self.assertEqual(
-            self.server.interceptor_service.cmds[1]['replaced_command'],
-            '/usr/bin/gcc')
+            self.server.interceptor_service.cmds[0]['replaced_command'],
+            'afl-gcc')
         self.assertListEqual(
             list(
-                self.server.interceptor_service.cmds[1]['replaced_arguments']),
-            ['hello.c', '-o', 'foo'])
+                self.server.interceptor_service.cmds[0]['replaced_arguments']),
+            ['afl-gcc', 'hello.c', '-o', 'foo', '-g', '-O2'])
 
     def test_intercept_method(self):
         returncode = main(["--", BUILD_SH_PATH], cwd=TEST_PATH)

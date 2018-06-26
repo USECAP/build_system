@@ -29,30 +29,21 @@ absl::optional<InterceptSettings> InterceptorClient::GetSettings() {
   return settings;
 }
 
-void InterceptorClient::ReportInterceptedCommand(const char *path,
-                                                 char *const argv[],
-                                                 const char *new_path,
-                                                 char *const new_argv[]) {
+void InterceptorClient::ReportInterceptedCommand(
+    const CompilationCommand& orig_cc, const CompilationCommand& new_cc) {
   grpc::ClientContext context;
   Status response;
   auto cwd = fs::current_path();
   InterceptedCommand cmd;
-  cmd.set_original_command(path);
-  cmd.set_replaced_command(new_path);
+  cmd.set_original_command(orig_cc.command);
+  cmd.set_replaced_command(new_cc.command);
   cmd.set_directory(cwd);
-  cmd.set_file("");
-  cmd.set_output("");
 
-  SetDefaultDeadline(&context);
+  *cmd.mutable_original_arguments() = {orig_cc.arguments.begin(),
+                                       orig_cc.arguments.end()};
+  *cmd.mutable_replaced_arguments() = {new_cc.arguments.begin(),
+                                       new_cc.arguments.end()};
 
-  // This assumes the correct handling of argv in the caller
-  for (std::size_t arg_num = 1; argv[arg_num] != nullptr; arg_num++) {
-    cmd.add_original_arguments(argv[arg_num]);
-  }
-  // This assumes the correct handling of new_argv in the caller
-  for (std::size_t arg_num = 1; new_argv[arg_num] != nullptr; arg_num++) {
-    cmd.add_replaced_arguments(new_argv[arg_num]);
-  }
   auto status = stub_->ReportInterceptedCommand(&context, cmd, &response);
   if (!status.ok()) {
     std::cout << "Error reporting command " << status.error_message()
@@ -60,7 +51,7 @@ void InterceptorClient::ReportInterceptedCommand(const char *path,
   }
 }
 
-void InterceptorClient::SetDefaultDeadline(grpc::ClientContext *context) {
+void InterceptorClient::SetDefaultDeadline(grpc::ClientContext* context) {
   auto deadline =
       std::chrono::system_clock::now() + std::chrono::milliseconds(100);
   context->set_deadline(deadline);

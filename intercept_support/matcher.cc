@@ -1,6 +1,7 @@
 // Copyright (c) 2018 University of Bonn.
 
 #include "build_system/intercept_support/matcher.h"
+#include "build_system/intercept_support/filesystem.h"
 #include "re2/re2.h"
 
 namespace {
@@ -14,7 +15,9 @@ const SharedLibraryPattern SHARED_LIB_PATTERNS[] = {
 }  // namespace
 
 absl::optional<MatchingRule> Matcher::GetMatchingRule(
-    const std::string &command) const {
+    const std::string &command_path) const {
+  auto command = fs::path(command_path).filename().string();
+
   for (auto rule : settings_.matching_rules()) {
     if (RE2::FullMatch(command, rule.match_command())) {
       return rule;

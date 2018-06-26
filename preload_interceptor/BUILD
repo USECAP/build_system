@@ -14,6 +14,7 @@ cc_binary(
     linkstatic = 1,
     visibility = ["//visibility:public"],
     deps = [
+        "//build_system/intercept_support",
         "//build_system/proto:cpp",
         "@abseil//absl/types:optional",
     ],

@@ -1,27 +1,11 @@
 cc_library(
-    name = "matcher",
-    srcs = ["matcher.cc"],
-    hdrs = [
-        "matcher.h",
-        "types.h",
+    name = "intercept_support",
+    srcs = glob(["*.cc"]),
+    hdrs = glob(["*.h"]),
+    linkopts = [
+        "-lstdc++fs",
     ],
-    deps = [
-        "//build_system/proto:cpp",
-        "@abseil//absl/strings",
-        "@abseil//absl/types:optional",
-        "@google_re2//:re2",
-    ],
-)
-
-cc_library(
-    name = "replacer",
-    srcs = ["replacer.cc"],
-    hdrs = [
-        "cc_arg_info.h",
-        "matcher.h",
-        "replacer.h",
-        "types.h",
-    ],
+    visibility = ["//visibility:public"],
     deps = [
         "//build_system/proto:cpp",
         "@abseil//absl/strings",
@@ -36,8 +20,7 @@ cc_test(
     srcs = glob(["test/*_test.cc"]),
     copts = ["-Iexternal/gtest/include"],
     deps = [
-        ":matcher",
-        ":replacer",
+        ":intercept_support",
         "@googletest//:gtest_main",
     ],
 )

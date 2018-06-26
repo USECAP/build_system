@@ -31,13 +31,17 @@ class Interceptor:
 
     def __init__(self, argv, cwd=None):
         self.returncode = -1
+        self._setup_arg_parser()
         try:
             split_index = argv.index('--')
+        except ValueError:
+            self._print_usage()
+            sys.exit(-1)
+        try:
             self.command = argv[split_index + 1:]
-            self.args = self._parse_arguments(argv[:split_index])
+            self.args = self._arg_parser.parse_args(argv[:split_index])
         except IndexError:
-            self.args = None
-            print("Wrong usage")
+            self._print_usage()
             sys.exit(-1)
 
         if cwd is None:
@@ -57,30 +61,28 @@ class Interceptor:
         if self.args and self.args.config:
             self.args.config.close()
 
-    def _parse_arguments(self, argv):
-        """
-        :param argv: parses the raw argv vector
-        :return: parsed arguments
-        """
-        parser = argparse.ArgumentParser()
-        parser.add_argument(
+    def _print_usage(self):
+        self._arg_parser.print_help()
+
+    def _setup_arg_parser(self):
+        self._arg_parser = argparse.ArgumentParser()
+        self._arg_parser.add_argument(
             "--fuzzer",
             help="use fuzzer configuration", type=str,
             default="default")
-        parser.add_argument(
+        self._arg_parser.add_argument(
             "--match_compiler",
             type=str, default="",
             help="compiler call which might be intercepted")
-        parser.add_argument(
+        self._arg_parser.add_argument(
             "--create_compiler_database",
             type=bool, default=False,
             help="whether a compiler database should be created")
-        parser.add_argument(
+        self._arg_parser.add_argument(
             "--config",
             help="use fuzzer configuration",
             type=argparse.FileType("r"),
             default=str(Path(FUZZER_CONFIGS_PATH, "default.yaml")))
-        return parser.parse_args(argv)
 
     def _call(self):
         """
@@ -99,12 +101,15 @@ class Interceptor:
     def _write_compile_commands_db(self):
         with open("{}/compile_commands.json".format(self.cwd), 'w') as file:
             for cmd in self.server.interceptor_service.cmds:
-                compile_file = SplitCompileCommand(self.command)
-                cmd = {'arguments': [cmd['replaced_command']] + cmd[
-                    'replaced_arguments'],
-                       'directory': cmd['directory'],
-                       'output': cmd['output'],
-                       'file': compile_file.get_source_file()}
+                command_line = " ".join(cmd['replaced_arguments'])
+                compile_file = SplitCompileCommand(command_line)
+                cmd = {
+                    'arguments': [cmd['replaced_command']] + cmd[
+                        'replaced_arguments'][1:],
+                    'directory': cmd['directory'],
+                    'output': compile_file.output_file,
+                    'file': compile_file.input_files
+                }
                 json.dump(cmd, file)
 
 

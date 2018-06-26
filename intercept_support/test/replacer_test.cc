@@ -1,39 +1,48 @@
 // Copyright (c) 2018 University of Bonn.
 
-#include "gtest/gtest.h"
 #include "build_system/intercept_support/replacer.h"
+#include "gtest/gtest.h"
+
+namespace {
+const auto C_PATTERN =
+    "^([^-]*-)*[mg]cc(-\\d+(\\.\\d+){0,2})?$|"
+    "^([^-]*-)*clang(-\\d+(\\.\\d+){0,2})?$|"
+    "^(|i)cc$|^(g|)xlc$";
 
 struct ReplacerTestCase {
   CompilationCommand cc;
-  std::vector<std::string> add_arguments;
-  std::vector<std::string> remove_arguments;
-  std::vector<std::string> result;
+  std::list<std::string> add_arguments;
+  std::list<std::string> remove_arguments;
+  std::list<std::string> result;
 };
+}  // namespace
 
 class ReplacerTest : public testing::TestWithParam<ReplacerTestCase> {
  public:
-  virtual void SetUp() {
-    replacer = new Replacer(settings);
-  }
-
-  virtual void TearDown() {
-    delete (replacer);
-  }
+  virtual void SetUp() { replacer = std::make_unique<Replacer>(settings); }
 
   InterceptSettings settings;
-  Replacer *replacer;
+  std::unique_ptr<Replacer> replacer;
 };
 
-INSTANTIATE_TEST_CASE_P(Test, ReplacerTest, testing::Values(
-  ReplacerTestCase{{"gcc", {"test.cpp", "-O3", "-o", "test.o"}},
-                   {"-O0"}, {"-O3"}, {"test.cpp", "-o", "test.o", "-O0"}},
-  ReplacerTestCase{{"gcc", {"test.cpp", "-I", "DIR", "-O2", "-o", "test.o"}},
-                   {"-O0"}, {"-O2", "-I"}, {"test.cpp", "-o", "test.o", "-O0"}}
-));
+INSTANTIATE_TEST_CASE_P(
+    Test, ReplacerTest,
+    testing::Values(
+        ReplacerTestCase{
+            {"/usr/bin/gcc", {"gcc", "hello.c", "-o", "foo"}},
+            {"-O0"},
+            {"-O3"},
+            {"afl-gcc", "hello.c", "-o", "foo", "-O0"}},
+        ReplacerTestCase{
+            {"clang",
+             {"clang", "test.cpp", "-I", "DIR", "-O2", "-o", "test.o"}},
+            {"-O0"},
+            {"-O2", "-I"},
+            {"afl-gcc", "test.cpp", "-o", "test.o", "-O0"}}));
 
 TEST_P(ReplacerTest, GCC) {
   auto *rule = settings.add_matching_rules();
-  rule->set_match_command("gcc");
+  rule->set_match_command(C_PATTERN);
   rule->set_replace_command("afl-gcc");
   for (const auto &arg : GetParam().add_arguments) {
     rule->add_add_arguments(arg);
@@ -42,9 +51,8 @@ TEST_P(ReplacerTest, GCC) {
     rule->add_remove_arguments(arg);
   }
 
-  CompilationCommand adjusted_cc = replacer->Replace(GetParam().cc);
-  ASSERT_EQ(adjusted_cc.command, rule->replace_command());
-  ASSERT_EQ(adjusted_cc.arguments.size(), GetParam().result.size());
-  ASSERT_TRUE(std::equal(adjusted_cc.arguments.begin(), adjusted_cc.arguments.end(), GetParam().result.begin()));
+  CompilationCommand expected_cc("afl-gcc", GetParam().result);
+  auto replaced_cc = replacer->Replace(GetParam().cc);
+  ASSERT_EQ(replaced_cc->command, expected_cc.command);
+  ASSERT_EQ(replaced_cc->arguments, expected_cc.arguments);
 }
-

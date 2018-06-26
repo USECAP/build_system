@@ -44,6 +44,12 @@ py_binary(
     main = "main.py",
     deps = [
         ":interceptor",
+        ":split_compile_command",
+        "//build_system/interceptor:grpc_server",
+        "//build_system/proto:py",
+        requirement("setuptools"),
+        requirement("grpcio"),
+        requirement("protobuf"),
     ],
 )
 

@@ -6,8 +6,9 @@
 #include <grpc++/create_channel.h>
 #include <grpc++/grpc++.h>
 
-#include "build_system/proto/intercept.grpc.pb.h"
 #include "absl/types/optional.h"
+#include "build_system/intercept_support/compilation_command.h"
+#include "build_system/proto/intercept.grpc.pb.h"
 
 /**
  * FetchSettings fetches the intercept settings from the GRPC server.
@@ -18,12 +19,10 @@ class InterceptorClient {
   ~InterceptorClient() = default;
 
   absl::optional<InterceptSettings> GetSettings();
-  void ReportInterceptedCommand(const char *path, char *const argv[],
-                                const char *new_path, char *const new_argv[]);
+  void ReportInterceptedCommand(const CompilationCommand& orig_cc,
+                                const CompilationCommand& new_cc);
 
- private:
-  void SetDefaultDeadline(grpc::ClientContext *context);
+      private : void SetDefaultDeadline(grpc::ClientContext* context);
 
   std::unique_ptr<Interceptor::Stub> stub_;
 };
-

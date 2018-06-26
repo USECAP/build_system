@@ -6,7 +6,6 @@ import re
 
 from pathlib import Path
 
-
 IGNORED_FLAGS = {
     # preprocessor macros, ignored because would cause duplicate entries in
     # the output (the only difference would be these flags). this is actual
@@ -53,29 +52,34 @@ class SplitCompileCommand:
         Constructor
         :param command: compiler command
         """
-        self.compiler = ""
+        self._output_file = None
+        self.compiler = None
         self.compile_argv = []
-        self.file = []
+        self._input_files = []
 
-        try:
-            if self._split_compiler(command) is None:
-                raise TypeError
-        except TypeError:
-            print("bad input ...")
+        self._split_compiler(command)
+        if not self.compiler:
             return
 
-        try:
-            self.file = self._split_args()
-            if self.file is None:
-                raise TypeError
-        except TypeError:
-            print("sourcefile not detected ...")
-            return
+        self._parse_args()
 
-    def get_source_file(self):
+    @property
+    def input_files(self):
         """Extract the file(s) outof the compile command
         :return: a list of sourcefiles. """
-        return self.file
+        return self._input_files
+
+    @property
+    def output_file(self):
+        """Return the output file of the compile command."""
+        if not self._output_file:
+            return 'a.out'
+        return self._output_file
+
+    @property
+    def is_linker_command(self):
+        """Return True iff. the command is a linker command"""
+        return False
 
     def _classify_source(self, filename, c_compiler=True):
         """ Classify source file names and returns the presumed language,
@@ -117,25 +121,21 @@ class SplitCompileCommand:
         if len(command):
             self.compiler = Path(command[0]).name
             self.compile_argv = command[1:]
-            return True
-        else:
-            self.compiler = None
-            self.compile_argv = None
-            return None
 
-    def _split_args(self):
+    def _parse_args(self):
         """ Returns a value when the command is a compilation, None otherwise.
         :return: a List of source files """
 
-        result = []
-
         if self.compile_argv is None:
-            return None
+            return
 
-        for argument in self.compile_argv:
+        output_follows = False
+        for arg in self.compile_argv:
+            if output_follows:
+                output_follows = False
+                self._output_file = arg
             # parameter which looks source file is taken...
-            if (re.match(r'^[^-].+', argument) and
-                    self._classify_source(argument)):
-                result.append(argument)
-
-        return result
+            if (re.match(r'^[^-].+', arg) and self._classify_source(arg)):
+                self._input_files.append(arg)
+            if arg == '-o':
+                output_follows = True
