@@ -19,52 +19,31 @@ filegroup(
     visibility = ["//:__subpackages__"],
 )
 
-py_library(
-    name = "interceptor",
-    srcs = ["interceptor.py"],
-    data = [
+filegroup(
+    name = "testdata",
+    srcs = [
         "test/build.sh",
-        ":fuzzer_configs",
-        "//build_system/preload_interceptor:preload_interceptor.so",
+        "test/hello.c",
+        "test/test_fuzzer_config.yaml",
     ],
-    deps = [
-        ":intercept_settings",
-        requirement("pyyaml"),
-    ],
-)
-
-py_library(
-    name = "split_compile_command",
-    srcs = ["split_compile_command.py"],
+    visibility = ["//:__subpackages__"],
 )
 
 py_binary(
     name = "intercept",
-    srcs = ["main.py"],
+    srcs = glob(["*.py"]),
+    data = [
+        ":fuzzer_configs",
+        "//build_system/preload_interceptor:preload_interceptor.so",
+    ],
     main = "main.py",
-    deps = [
-        ":interceptor",
-        ":split_compile_command",
-        "//build_system/interceptor:grpc_server",
-        "//build_system/proto:py",
-        requirement("setuptools"),
-        requirement("grpcio"),
-        requirement("protobuf"),
-    ],
-)
-
-py_library(
-    name = "grpc_server",
-    srcs = ["grpc_server.py"],
-    visibility = [
-        "//build_system:__pkg__",
-        "//build_system/preload_interceptor:__pkg__",
-    ],
+    visibility = ["//visibility:public"],
     deps = [
         "//build_system/proto:py",
         requirement("setuptools"),
-        requirement("grpcio"),
-        requirement("protobuf"),
+        grpcio_requirement("grpcio"),
+        grpcio_requirement("protobuf"),
+        requirement("pyyaml"),
     ],
 )
 
@@ -72,48 +51,31 @@ py_test(
     name = "grpc_test",
     size = "small",
     srcs = ["test/grpc_test.py"],
-    data = [
-        "test/build.sh",
-    ],
-    deps = [
-        "//build_system/interceptor:grpc_server",
-        "//build_system/proto:py",
-        requirement("setuptools"),
-        requirement("grpcio"),
-        requirement("protobuf"),
-    ],
+    data = [":testdata"],
+    deps = [":intercept"],
 )
 
 py_test(
     name = "split_argv_test",
     size = "small",
     srcs = ["test/split_argv_test.py"],
-    imports = ["."],
-    deps = [
-        ":split_compile_command",
-    ],
+    deps = [":intercept"],
 )
 
 py_test(
     name = "integration_test",
     size = "small",
     srcs = ["test/integration_test.py"],
-    data = [
-        "test/build.sh",
-        "test/hello.c",
-        "//build_system/preload_interceptor:preload_interceptor.so",
-    ],
-    imports = ["."],
-    deps = [
-        ":intercept",
-        ":interceptor",
-        ":split_compile_command",
-        "//build_system/interceptor:grpc_server",
-        "//build_system/proto:py",
-        requirement("grpcio"),
-        requirement("protobuf"),
-        requirement("setuptools"),
-    ],
+    data = [":testdata"],
+    deps = [":intercept"],
+)
+
+py_test(
+    name = "intercept_settings_test",
+    size = "small",
+    srcs = ["test/intercept_settings_test.py"],
+    data = [":testdata"],
+    deps = [":intercept"],
 )
 
 sh_test(
@@ -121,29 +83,4 @@ sh_test(
     size = "small",
     srcs = ["test/lint.sh"],
     data = glob(["**/*.py"]),
-)
-
-py_library(
-    name = "intercept_settings",
-    srcs = ["intercept_settings.py"],
-    data = [
-        ":fuzzer_configs",
-    ],
-    deps = [
-        "//build_system/proto:py",
-        requirement("pyyaml"),
-        requirement("grpcio"),
-        requirement("protobuf"),
-        requirement("setuptools"),
-    ],
-)
-
-py_test(
-    name = "intercept_settings_test",
-    size = "small",
-    srcs = ["test/intercept_settings_test.py"],
-    data = ["test/test_fuzzer_config.yaml"],
-    deps = [
-        ":intercept_settings",
-    ],
 )
