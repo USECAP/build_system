@@ -11,7 +11,7 @@ from pathlib import Path
 
 from build_system.interceptor import intercept_settings
 from build_system.interceptor.grpc_server import InterceptorServer
-from build_system.interceptor.split_compile_command import SplitCompileCommand
+from build_system.interceptor.commandline import parse_commandline
 
 MODULE_PATH = Path(sys.modules[__name__].__file__).parent
 FUZZER_CONFIGS_PATH = Path(MODULE_PATH, 'config', 'fuzzer')
@@ -23,7 +23,6 @@ class Interceptor:
     """
     Interceptor intercepts all exec commands, filters compiler calls and writes
     those in a compilation database
-
 
     :param argv:    argument vector, e.g.: intercept --options -- make
     :param cwd:  specify current working directory if needed
@@ -107,7 +106,7 @@ class Interceptor:
         with open("{}/compile_commands.json".format(self.cwd), 'w') as file:
             for cmd in self.server.interceptor_service.cmds:
                 command_line = " ".join(cmd['replaced_arguments'])
-                compile_file = SplitCompileCommand(command_line)
+                compile_file = parse_commandline(command_line)
                 cmd = {
                     'arguments':
                     [cmd['replaced_command']] + cmd['replaced_arguments'][1:],
