@@ -28,6 +28,8 @@ std::string Replacer::AdjustCommand(const std::string &command_path) const {
 
   for (const auto &setting : settings_.matching_rules()) {
     if (RE2::FullMatch(command, setting.match_command())) {
+      // Don't replace with an empty string
+      if (setting.replace_command().empty()) return command;
       return setting.replace_command();
     }
   }

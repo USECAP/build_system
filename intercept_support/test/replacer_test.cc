@@ -41,7 +41,7 @@ INSTANTIATE_TEST_CASE_P(
             {"afl-gcc", "test.cpp", "-o", "test.o", "-O0"}}));
 
 TEST_P(ReplacerTest, GCC) {
-  auto *rule = settings.add_matching_rules();
+  auto rule = settings.add_matching_rules();
   rule->set_match_command(C_PATTERN);
   rule->set_replace_command("afl-gcc");
   for (const auto &arg : GetParam().add_arguments) {
@@ -55,4 +55,15 @@ TEST_P(ReplacerTest, GCC) {
   auto replaced_cc = replacer->Replace(GetParam().cc);
   ASSERT_EQ(replaced_cc->command, expected_cc.command);
   ASSERT_EQ(replaced_cc->arguments, expected_cc.arguments);
+}
+
+TEST(Replacer, EmptyReplacement_ShouldKeepOriginalCommand) {
+  InterceptSettings settings;
+  auto rule = settings.add_matching_rules();
+  rule->set_match_command(C_PATTERN);
+  rule->set_replace_command("");
+
+  CompilationCommand cc("gcc", {"gcc", "test.c", "-o", "test"});
+  auto replaced_cc = Replacer(settings).Replace(cc);
+  ASSERT_EQ(replaced_cc->command, "gcc");
 }
