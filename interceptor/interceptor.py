@@ -58,8 +58,10 @@ class Interceptor:
             self._write_compile_commands_db()
 
     def __del__(self):
-        if self.args and self.args.config:
+        try:
             self.args.config.close()
+        except AttributeError:
+            pass
 
     def _print_usage(self):
         self._arg_parser.print_help()
@@ -68,15 +70,18 @@ class Interceptor:
         self._arg_parser = argparse.ArgumentParser()
         self._arg_parser.add_argument(
             "--fuzzer",
-            help="use fuzzer configuration", type=str,
+            help="use fuzzer configuration",
+            type=str,
             default="default")
         self._arg_parser.add_argument(
             "--match_compiler",
-            type=str, default="",
+            type=str,
+            default="",
             help="compiler call which might be intercepted")
         self._arg_parser.add_argument(
             "--create_compiler_database",
-            type=bool, default=False,
+            type=bool,
+            default=False,
             help="whether a compiler database should be created")
         self._arg_parser.add_argument(
             "--config",
@@ -104,11 +109,14 @@ class Interceptor:
                 command_line = " ".join(cmd['replaced_arguments'])
                 compile_file = SplitCompileCommand(command_line)
                 cmd = {
-                    'arguments': [cmd['replaced_command']] + cmd[
-                        'replaced_arguments'][1:],
-                    'directory': cmd['directory'],
-                    'output': compile_file.output_file,
-                    'file': compile_file.input_files
+                    'arguments':
+                    [cmd['replaced_command']] + cmd['replaced_arguments'][1:],
+                    'directory':
+                    cmd['directory'],
+                    'output':
+                    compile_file.output_file,
+                    'file':
+                    compile_file.input_files
                 }
                 json.dump(cmd, file)
 

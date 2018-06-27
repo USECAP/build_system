@@ -12,6 +12,7 @@ load(
     "py_library",
     "py_test",
 )
+load("@subpar//:subpar.bzl", "par_binary")
 
 filegroup(
     name = "fuzzer_configs",
@@ -29,7 +30,7 @@ filegroup(
     visibility = ["//:__subpackages__"],
 )
 
-py_binary(
+par_binary(
     name = "intercept",
     srcs = glob(["*.py"]),
     data = [
@@ -38,6 +39,7 @@ py_binary(
     ],
     main = "main.py",
     visibility = ["//visibility:public"],
+    zip_safe = False,
     deps = [
         "//build_system/proto:py",
         requirement("setuptools"),
