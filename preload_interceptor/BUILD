@@ -1,5 +1,3 @@
-load("@pip_grpcio//:requirements.bzl", "requirement")
-
 cc_binary(
     name = "preload_interceptor.so",
     srcs = glob([

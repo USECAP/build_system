@@ -1,6 +1,10 @@
-pyyaml
-grpcio
-protobuf
-setuptools
-pytest
+coverage>=4.0
+cython>=0.27
 flake8
+grpcio>=1.6.0
+protobuf>=3.5.0.post1
+pytest
+pyyaml
+setuptools
+six>=1.10
+wheel>=0.29

@@ -1,8 +1,4 @@
 load(
-    "@pip_grpcio//:requirements.bzl",
-    grpcio_requirement = "requirement",
-)
-load(
     "@local_pip//:requirements.bzl",
     requirement = "requirement",
 )
@@ -42,9 +38,8 @@ par_binary(
     zip_safe = False,
     deps = [
         "//build_system/proto:py",
-        requirement("setuptools"),
-        grpcio_requirement("grpcio"),
-        grpcio_requirement("protobuf"),
+        requirement("grpcio"),
+        requirement("protobuf"),
         requirement("pyyaml"),
     ],
 )
