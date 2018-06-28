@@ -37,6 +37,7 @@ class CompilationDatabase:
         """
         self.db = file
         self.queue = queue
+        self._is_first_iteration = True
 
     async def write_compile_commands_db(self):
         """
@@ -44,30 +45,28 @@ class CompilationDatabase:
 
         """
         self.db.write("[\n")
-        first_iteration = True
         while True:
             cmd = await self.queue.get()
             if cmd is None:
                 break
-            if first_iteration is not True:
-                self.db.write(",\n")
-            else:
-                first_iteration = False
-            command_line = cmd['replaced_command'] + " " + " ".join(
-                cmd['replaced_arguments'])
-            compile_file = parse_commandline(command_line)
-            cmd = {
-                'arguments':
-                    [cmd['replaced_command']] + cmd['replaced_arguments'],
-                'directory':
-                    cmd['directory'],
-                'output':
-                    compile_file.output_file,
-                'file':
-                    compile_file.input_files
-            }
-            json.dump(cmd, self.db)
+            command_name = cmd['replaced_command']
+            # arguments without argv[0] (the command name again)
+            command_args = cmd['replaced_arguments'][1:]
+            command_line = [command_name] + command_args
+            compile_file = parse_commandline(" ".join(command_line))
+            for input_file in compile_file.input_files:
+                self._write_entry(
+                    arguments=command_line,
+                    directory=cmd['directory'],
+                    output=compile_file.output_file,
+                    file=input_file)
         self.db.write("]\n")
+
+    def _write_entry(self, **kwargs):
+        if self._is_first_iteration is not True:
+            self.db.write(",\n")
+        self._is_first_iteration = False
+        json.dump(kwargs, self.db)
 
 
 class Interceptor:
