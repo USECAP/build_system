@@ -53,6 +53,14 @@ py_test(
 )
 
 py_test(
+    name = "compilation_db_test",
+    size = "small",
+    srcs = ["test/compilation_db_test.py"],
+    data = [":testdata"],
+    deps = [":intercept"],
+)
+
+py_test(
     name = "split_argv_test",
     size = "small",
     srcs = ["test/split_argv_test.py"],

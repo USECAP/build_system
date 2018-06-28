@@ -19,6 +19,57 @@ LD_PRELOAD_LIB = Path(MODULE_PATH,
                       "../preload_interceptor/preload_interceptor.so")
 
 
+class CompilationDatabase:
+    """CompilationDatabase for creating clang's compilation database
+    compile_commands.json"""
+
+    DEFAULT_COMPILATION_DB = "compile_commands.json"
+
+    def __init__(self, queue, file):
+        """
+        Constructor for the CompilationDatabase class
+        :param queue: the que where the commands come from
+        :param cwd: the directory where the database is created (default is
+                    the current working directory
+        :param file: file descriptor for the database (recommended name is
+                     in the call constant DEFAULT_COMPILATION_DB which equals
+                     "compilation_database.json")
+        """
+        self.db = file
+        self.queue = queue
+
+    async def write_compile_commands_db(self):
+        """
+        Asynchronous method to actually write the compilation db
+
+        """
+        self.db.write("[\n")
+        first_iteration = True
+        while True:
+            cmd = await self.queue.get()
+            if cmd is None:
+                break
+            if first_iteration is not True:
+                self.db.write(",\n")
+            else:
+                first_iteration = False
+            command_line = cmd['replaced_command'] + " " + " ".join(
+                cmd['replaced_arguments'])
+            compile_file = parse_commandline(command_line)
+            cmd = {
+                'arguments':
+                    [cmd['replaced_command']] + cmd['replaced_arguments'],
+                'directory':
+                    cmd['directory'],
+                'output':
+                    compile_file.output_file,
+                'file':
+                    compile_file.input_files
+            }
+            json.dump(cmd, self.db)
+        self.db.write("]\n")
+
+
 class Interceptor:
     """
     Interceptor intercepts all exec commands, filters compiler calls and writes
@@ -53,7 +104,14 @@ class Interceptor:
         self.server.start()
         call = asyncio.ensure_future(self._call())
         if self.args.create_compiler_database:
-            self._write_compile_commands_db()
+            path = Path(self.cwd, CompilationDatabase.DEFAULT_COMPILATION_DB)
+            with open(path, "w") as file:
+                database = CompilationDatabase(
+                    self.server.interceptor_service.cmds, file=file)
+                db = asyncio.ensure_future(
+                    database.write_compile_commands_db())
+                self._loop.run_until_complete(db)
+
         self.returncode = self._loop.run_until_complete(call)
         self.server.stop()
 
@@ -80,7 +138,7 @@ class Interceptor:
             help="compiler call which might be intercepted")
         self._arg_parser.add_argument(
             "--create_compiler_database",
-            type=bool,
+            action="store_true",
             default=False,
             help="whether a compiler database should be created")
         self._arg_parser.add_argument(
@@ -103,24 +161,11 @@ class Interceptor:
         process = await asyncio.create_subprocess_exec(
             *self.command, env=env, cwd=str(self.cwd))
         await process.communicate()
-        return process.returncode
 
-    def _write_compile_commands_db(self):
-        with open("{}/compile_commands.json".format(self.cwd), 'w') as file:
-            for cmd in self.server.interceptor_service.cmds:
-                command_line = " ".join(cmd['replaced_arguments'])
-                compile_file = parse_commandline(command_line)
-                cmd = {
-                    'arguments':
-                    [cmd['replaced_command']] + cmd['replaced_arguments'][1:],
-                    'directory':
-                    cmd['directory'],
-                    'output':
-                    compile_file.output_file,
-                    'file':
-                    compile_file.input_files
-                }
-                json.dump(cmd, file)
+        # write None to queue to communicate that the call finished
+        self.server.interceptor_service.cmds.put_nowait(None)
+
+        return process.returncode
 
 
 def main(argv=sys.argv[1:], cwd=None):

@@ -1,3 +1,4 @@
+import json
 import os
 import subprocess
 import unittest
@@ -86,6 +87,16 @@ class IntegrationTests(unittest.TestCase):
     def test_intercept_parser_argument(self):
         cmd = ["--fuzzer", "libfuzzer", "--", str(BUILD_SH_PATH)]
         returncode = main(cmd, cwd=str(TEST_PATH))
+        self.assertEqual(returncode, 0, msg="intercept not executed")
+
+    def test_intercept_compilation_db(self):
+        returncode = main(
+            ["--create_compiler_database", "--", str(BUILD_SH_PATH)],
+            cwd=str(TEST_PATH))
+        self.assertTrue(Path(TEST_PATH, "compile_commands.json").is_file())
+        # compilation db must be valid json
+        with open(Path(TEST_PATH, "compile_commands.json"), "r") as file:
+            self.assertTrue(json.load(file))
         self.assertEqual(returncode, 0, msg="intercept not executed")
 
 

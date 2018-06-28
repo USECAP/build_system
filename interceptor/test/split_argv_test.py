@@ -35,6 +35,11 @@ class SplitArgvTests(unittest.TestCase):
         self.assertEqual(parsed_cmd.output_file, 'libacc_preload.so')
         self.assertTrue(parsed_cmd.is_linker_command)
 
+    def test_simple_naming(self):
+        cmd = "gcc -o foo test.c"
+        parsed_cmd = parse_commandline(cmd)
+        self.assertEqual("foo", parsed_cmd.output_file)
+
 
 if __name__ == '__main__':
     unittest.main()
