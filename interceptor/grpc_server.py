@@ -1,8 +1,8 @@
 """
 Module for the gRPC Server for exec interception
 """
+import asyncio
 import time
-from collections import deque
 
 import grpc
 from concurrent import futures
@@ -119,7 +119,7 @@ class InterceptorService(intercept_pb2_grpc.InterceptorServicer):
         :param intercept_settings: Settings for the interceptor
         """
         self._intercept_settings = intercept_settings
-        self.cmds = deque()
+        self.cmds = asyncio.Queue()
         self.received = 0
 
     def GetInterceptSettings(self, request, context):
@@ -139,7 +139,7 @@ class InterceptorService(intercept_pb2_grpc.InterceptorServicer):
         :param context:
         :return: Status message
         """
-        self.cmds.append(
+        self.cmds.put_nowait(
             {'original_command': str(command.original_command),
              'original_arguments': list(command.original_arguments),
              'replaced_command': str(command.replaced_command),
@@ -149,5 +149,6 @@ class InterceptorService(intercept_pb2_grpc.InterceptorServicer):
         self.received += 1
 
         return intercept_pb2.Status(
-            received=self.received, processed=self.received - len(self.cmds),
-            message="{} commands received".format(len(self.cmds)))
+            received=self.received,
+            processed=self.received - self.cmds.qsize(),
+            message="{} commands received".format(self.cmds.qsize()))

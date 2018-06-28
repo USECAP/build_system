@@ -12,7 +12,7 @@ LD_PRELOAD_PATH = Path(
     "build_system", "preload_interceptor", "preload_interceptor.so").resolve()
 INTERCEPT_PATH = os.path.abspath(
     Path("build_system", "interceptor", "intercept"))
-TEST_PATH = Path("build_system", "interceptor", "test").resolve()
+TEST_PATH = os.path.abspath(Path("build_system", "interceptor", "test"))
 BUILD_SH_PATH = Path(TEST_PATH, "build.sh").resolve()
 
 
@@ -44,7 +44,7 @@ class IntegrationTests(unittest.TestCase):
                         current wd contents: {}""".format(
                 os.getcwd(), os.listdir(os.getcwd())))
         self.assertTrue(
-            BUILD_SH_PATH.is_file(), msg="""
+            os.path.isfile(BUILD_SH_PATH), msg="""
                         build.sh not found
                         current wd: {}
                         current wd contents: {}""".format(
@@ -66,27 +66,26 @@ class IntegrationTests(unittest.TestCase):
         self.assertEqual(returncode, 0, msg="Build couldn't be executed")
         self.assertTrue(cmds, "Commands are empty")
 
-        self.assertEqual(
-            self.server.interceptor_service.cmds[0]['replaced_command'],
-            'afl-gcc')
+        cmd = self.server.interceptor_service.cmds.get_nowait()
+        self.assertEqual(cmd['replaced_command'], 'afl-gcc')
         self.assertListEqual(
-            list(
-                self.server.interceptor_service.cmds[0]['replaced_arguments']),
+            list(cmd['replaced_arguments']),
             ['afl-gcc', 'hello.c', '-o', 'foo', '-g', '-O2'])
 
     def test_intercept_method(self):
-        returncode = main(["--", BUILD_SH_PATH], cwd=TEST_PATH)
+        returncode = main(["--", str(BUILD_SH_PATH)], cwd=str(TEST_PATH))
         self.assertEqual(returncode, 0,
                          msg="interceptor's main method couldn't be executed")
 
     def test_intercept_script(self):
-        returncode = subprocess.call([INTERCEPT_PATH, "--", BUILD_SH_PATH],
-                                     cwd=str(TEST_PATH))
-        self.assertEqual(returncode, 0, msg="intercept not executed")
+        proc = subprocess.run(
+            [INTERCEPT_PATH, "--", str(BUILD_SH_PATH)], cwd=str(TEST_PATH),
+            stdout=subprocess.PIPE)
+        self.assertEqual(proc.returncode, 0, msg="intercept not executed")
 
     def test_intercept_parser_argument(self):
-        cmd = [INTERCEPT_PATH, "--fuzzer", "libfuzzer", "--", BUILD_SH_PATH]
-        returncode = subprocess.call(cmd, cwd=str(TEST_PATH))
+        cmd = ["--fuzzer", "libfuzzer", "--", str(BUILD_SH_PATH)]
+        returncode = main(cmd, cwd=str(TEST_PATH))
         self.assertEqual(returncode, 0, msg="intercept not executed")
 
 

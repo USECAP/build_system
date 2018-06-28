@@ -2,9 +2,9 @@
 Module for intercepting exec calls
 """
 import argparse
+import asyncio
 import json
 import os
-import subprocess
 import sys
 
 from pathlib import Path
@@ -29,6 +29,7 @@ class Interceptor:
     """
 
     def __init__(self, argv, cwd=None):
+        self._loop = asyncio.get_event_loop()
         self.returncode = -1
         self._setup_arg_parser()
         try:
@@ -42,7 +43,6 @@ class Interceptor:
         except IndexError:
             self._print_usage()
             sys.exit(-1)
-
         if cwd is None:
             self.cwd = Path(os.getcwd())
         else:
@@ -51,10 +51,11 @@ class Interceptor:
             intercept_settings=intercept_settings.parse_fuzzer_config(
                 self.args.config, self.args.fuzzer))
         self.server.start()
-        self.returncode = self._call()
-        self.server.stop()
+        call = asyncio.ensure_future(self._call())
         if self.args.create_compiler_database:
             self._write_compile_commands_db()
+        self.returncode = self._loop.run_until_complete(call)
+        self.server.stop()
 
     def __del__(self):
         try:
@@ -88,7 +89,7 @@ class Interceptor:
             type=argparse.FileType("r"),
             default=str(Path(FUZZER_CONFIGS_PATH, "default.yaml")))
 
-    def _call(self):
+    async def _call(self):
         """
         Makes the build process call given by the user (e.g. make)
         :return: returncode of the build process call
@@ -97,10 +98,12 @@ class Interceptor:
             print("LD_PRELOAD_LIB {} doesn't exist...".format(LD_PRELOAD_LIB))
             return -1
         env = os.environ.copy()
-        env["LD_PRELOAD"] = LD_PRELOAD_LIB
+        env["LD_PRELOAD"] = str(LD_PRELOAD_LIB)
         env["REPORT_URL"] = "localhost:{}".format(self.server.port)
-        returncode = subprocess.call(self.command, cwd=self.cwd, env=env)
-        return returncode
+        process = await asyncio.create_subprocess_exec(
+            *self.command, env=env, cwd=str(self.cwd))
+        await process.communicate()
+        return process.returncode
 
     def _write_compile_commands_db(self):
         with open("{}/compile_commands.json".format(self.cwd), 'w') as file:

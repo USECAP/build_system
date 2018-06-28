@@ -28,7 +28,7 @@ class GrpcTests(unittest.TestCase):
         self.assertEqual(response.received, 4)
         self.assertTrue(response.message == "4 commands received")
         self.assertEqual(response.processed, 0)
-        self.assertEqual(len(self.server.interceptor_service.cmds), 4)
+        self.assertEqual(self.server.interceptor_service.cmds.qsize(), 4)
 
 
 if __name__ == '__main__':
