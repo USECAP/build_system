@@ -15,8 +15,8 @@ const SharedLibraryPattern SHARED_LIB_PATTERNS[] = {
 }  // namespace
 
 absl::optional<MatchingRule> Matcher::GetMatchingRule(
-    const std::string &command_path) const {
-  auto command = fs::path(command_path).filename().string();
+    std::string command_path) const {
+  auto command = fs::path(std::move(command_path)).filename().string();
 
   for (auto rule : settings_.matching_rules()) {
     if (RE2::FullMatch(command, rule.match_command())) {

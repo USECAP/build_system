@@ -13,15 +13,15 @@ class Replacer {
       : settings_(settings), matcher_(settings){};
 
   absl::optional<CompilationCommand> Replace(
-      const CompilationCommand &original_cc) const;
+      CompilationCommand original_cc) const;
 
  private:
-  std::string AdjustCommand(const std::string &command) const;
+  std::string AdjustCommand(std::string command) const;
 
-  void AddArguments(const CompilationCommand &original_command,
+  void AddArguments(const std::string &original_command,
                     CompilationCommand::ArgsT *arguments) const;
 
-  bool RemoveArguments(const CompilationCommand &original_cc,
+  void RemoveArguments(const std::string &original_cc,
                        CompilationCommand::ArgsT *arguments) const;
 
   const InterceptSettings &settings_;

@@ -10,10 +10,11 @@ const auto C_PATTERN =
     "^(|i)cc$|^(g|)xlc$";
 
 struct ReplacerTestCase {
+  using ContainerT = CompilationCommand::ArgsT;
   CompilationCommand cc;
-  std::list<std::string> add_arguments;
-  std::list<std::string> remove_arguments;
-  std::list<std::string> result;
+  ContainerT add_arguments;
+  ContainerT remove_arguments;
+  ContainerT result;
 };
 }  // namespace
 
@@ -32,13 +33,17 @@ INSTANTIATE_TEST_CASE_P(
             {"/usr/bin/gcc", {"gcc", "hello.c", "-o", "foo"}},
             {"-O0"},
             {"-O3"},
-            {"afl-gcc", "hello.c", "-o", "foo", "-O0"}},
+            {"afl-gcc", "hello.c", "-o", "foo", "-O0"}
+        },
         ReplacerTestCase{
             {"clang",
-             {"clang", "test.cpp", "-I", "DIR", "-O2", "-o", "test.o"}},
+                {"clang", "test.cpp", "-I", "DIR", "-O2", "-o", "test.o"}},
             {"-O0"},
             {"-O2", "-I"},
-            {"afl-gcc", "test.cpp", "-o", "test.o", "-O0"}}));
+            {"afl-gcc", "test.cpp", "-o", "test.o", "-O0"}
+        }
+    )
+);
 
 TEST_P(ReplacerTest, GCC) {
   auto rule = settings.add_matching_rules();

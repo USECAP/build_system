@@ -4,5 +4,5 @@
 TEST(CompilationCommand, ConstructFromCArgsArray) {
   const char *argv[4] = {"foo", "bar", "baz", nullptr};
   CompilationCommand cc("cc", reinterpret_cast<const char *const *>(argv));
-  ASSERT_EQ(cc.arguments, std::list<std::string>({"foo", "bar", "baz"}));
+  ASSERT_EQ(cc.arguments, CompilationCommand::ArgsT({"foo", "bar", "baz"}));
 }

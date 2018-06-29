@@ -11,8 +11,7 @@ class Matcher {
  public:
   Matcher(const InterceptSettings& settings) : settings_(settings){};
 
-  absl::optional<MatchingRule> GetMatchingRule(
-      const std::string& command_path) const;
+  absl::optional<MatchingRule> GetMatchingRule(std::string command_path) const;
   bool doesCompileSharedLib(const CompilationCommand& cc) const;
 
  private:
