@@ -29,8 +29,6 @@ class CompilationDatabase:
         """
         Constructor for the CompilationDatabase class
         :param queue: the que where the commands come from
-        :param cwd: the directory where the database is created (default is
-                    the current working directory
         :param file: file descriptor for the database (recommended name is
                      in the call constant DEFAULT_COMPILATION_DB which equals
                      "compilation_database.json")
