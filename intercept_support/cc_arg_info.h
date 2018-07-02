@@ -4,12 +4,13 @@
 
 #include <map>
 #include <string>
+#include "absl/strings/string_view.h"
 
 struct ArgInfo {
   int arity;
 };
 
-static std::map<std::string, ArgInfo> CC_ARGUMENTS_INFO = {
+static std::map<absl::string_view, ArgInfo> CC_ARGUMENTS_INFO = {
     {"-", {0}},
     {"-o", {1}},
     {"-c", {0}},

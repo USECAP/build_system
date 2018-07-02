@@ -6,6 +6,7 @@
 #include <iostream>
 #include <sstream>
 #include <vector>
+#include "absl/types/optional.h"
 #include "build_system/intercept_support/replacer.h"
 #include "intercept_settings.h"
 
@@ -40,7 +41,7 @@ InterceptSettings *settings() {
 
 void unset_ld_preload() { unsetenv("LD_PRELOAD"); }
 
-void unset_ld_preload(char *const** envp) {
+void unset_ld_preload(char *const **envp) {
   // TODO Clear environment from parameter
 }
 

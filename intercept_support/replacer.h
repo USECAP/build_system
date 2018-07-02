@@ -3,27 +3,24 @@
 #pragma once
 
 #include "absl/types/optional.h"
-#include "build_system/intercept_support/matcher.h"
 #include "build_system/intercept_support/compilation_command.h"
 #include "build_system/proto/intercept.pb.h"
 
 class Replacer {
  public:
-  Replacer(const InterceptSettings &settings)
-      : settings_(settings), matcher_(settings){};
+  Replacer(const InterceptSettings &settings) : settings_(settings){};
 
   absl::optional<CompilationCommand> Replace(
       CompilationCommand original_cc) const;
 
  private:
-  std::string AdjustCommand(std::string command) const;
+  void AddArguments(CompilationCommand::ArgsT *arguments,
+                    const MatchingRule &rule) const;
 
-  void AddArguments(const std::string &original_command,
-                    CompilationCommand::ArgsT *arguments) const;
+  void RemoveArguments(CompilationCommand::ArgsT *arguments,
+                       const MatchingRule &rule) const;
 
-  void RemoveArguments(const std::string &original_cc,
-                       CompilationCommand::ArgsT *arguments) const;
+  absl::optional<MatchingRule> GetMatchingRule(std::string command_path) const;
 
   const InterceptSettings &settings_;
-  Matcher matcher_;
 };
