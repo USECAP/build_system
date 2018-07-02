@@ -28,8 +28,8 @@ libfuzzer:
       replace: "clang"
       add_arguments:
       - "-g"
-      - "-fsanitize=address,undefined,signed-integer-overflow"
-      - "-fsanitize-coverage=edge,indirect-calls,trace-pc-guard,trace-cmp"
+      - "-fsanitize=address,undefined,signed-integer-overflow,fuzzer-no-link"
+      - "-fsanitize-coverage=trace-cmp"
       - "-fno-omit-frame-pointer"
     cxx:
       <<: *compiler
