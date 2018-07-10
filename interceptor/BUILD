@@ -1,7 +1,4 @@
-load(
-    "@local_pip//:requirements.bzl",
-    requirement = "requirement",
-)
+load("@local_pip//:requirements.bzl", "requirement")
 load(
     "@io_bazel_rules_python//python:python.bzl",
     "py_binary",
