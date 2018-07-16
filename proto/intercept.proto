@@ -1,35 +1,39 @@
 syntax = "proto3";
 
 message InterceptedCommand {
-  string original_command = 1;
+  string   original_command          = 1;
   repeated string original_arguments = 2;
 
-  string replaced_command = 3;
+  string   replaced_command          = 3;
   repeated string replaced_arguments = 4;
 
   string directory = 5;
 }
 
 message MatchingRule {
-  string match_command = 1;  // a regex describing which commands to match against
-  string replace_command = 2;  // the command to replace the original command by
-  repeated string add_arguments = 3;  // arguments / flags to add to the command
+  string   match_command           = 1;  // a regex describing which commands to match against
+  string   replace_command         = 2;  // the command to replace the original command by
+  repeated string add_arguments    = 3;  // arguments / flags to add to the command
   repeated string remove_arguments = 4;  // arguments / flags to remove from the command
 }
 
 message InterceptSettings {
-  repeated MatchingRule matching_rules = 1; // a list of the settings defined above
+  repeated MatchingRule matching_rules = 1;  // a list of the settings defined above
 }
 
 message Status {
-  int32 received = 1;
-  int32 processed = 2;
-  string message = 3;
+  int32  received  = 1;
+  int32  processed = 2;
+  string message   = 3;
 }
 
-message InterceptSettingsRequest {}
+message InterceptSettingsRequest {
+}
 
 service Interceptor {
-  rpc GetInterceptSettings (InterceptSettingsRequest) returns (InterceptSettings) {}
-  rpc ReportInterceptedCommand (InterceptedCommand) returns (Status) {}
+  rpc GetInterceptSettings(InterceptSettingsRequest)
+      returns (InterceptSettings) {
+  }
+  rpc ReportInterceptedCommand(InterceptedCommand) returns (Status) {
+  }
 }
