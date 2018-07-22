@@ -1,14 +1,9 @@
 cc_library(
-    name = "intercept_support",
+    name = "utility",
     srcs = glob(["*.cc"]),
     hdrs = glob(["*.h"]),
-    linkopts = [
-        "-lstdc++fs",
-    ],
     visibility = ["//visibility:public"],
     deps = [
-        "//build_system/proto:cpp",
-        "//build_system/utility",
         "@abseil//absl/strings",
         "@abseil//absl/types:optional",
         "@google_re2//:re2",
@@ -20,8 +15,11 @@ cc_test(
     size = "small",
     srcs = glob(["test/*_test.cc"]),
     copts = ["-Iexternal/gtest/include"],
+    linkopts = [
+        "-lstdc++fs",
+    ],
     deps = [
-        ":intercept_support",
+        ":utility",
         "@googletest//:gtest_main",
     ],
 )

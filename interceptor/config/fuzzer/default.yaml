@@ -79,3 +79,4 @@ honggfuzz-clang:
       <<: *compiler
       match: "DEFAULT_CXX"
       replace: "hfuzz-clang++"
+

@@ -4,7 +4,6 @@
 #include <unistd.h>
 #include <cstdarg>
 #include <iostream>
-#include <sstream>
 #include <vector>
 #include "absl/types/optional.h"
 #include "build_system/intercept_support/replacer.h"
@@ -20,6 +19,19 @@ std::vector<char *> list_to_vector(va_list &args, const char *first_arg) {
     next_arg = va_arg(args, char *);
   }
   return result;
+}
+
+std::vector<char *> prepare_arguments(const CompilationCommand &cc) {
+  std::vector<char *> arguments;
+  arguments.reserve(16);
+
+  for (auto &arg : cc.arguments) {
+    if (!arg.empty()) arguments.emplace_back(const_cast<char *>(arg.data()));
+  }
+
+  if (arguments.back() != nullptr) arguments.emplace_back(nullptr);
+
+  return arguments;
 }
 
 absl::optional<InterceptSettings> settings_;
@@ -48,23 +60,31 @@ void unset_ld_preload(char *const **envp) {
 template <typename... Args>
 int intercept(const char *fn_name, const char *path, char *const argv[],
               Args... envp) {
+  using exec_type = int (*)(const char *, char *const *, Args...);
+  auto call = reinterpret_cast<exec_type>(dlsym(RTLD_NEXT, fn_name));
+
   auto settings_ = settings();
+  if (!settings_) {
+    std::cerr << "Settings could not be fetched!\n";
+    return call(path, argv, envp...);
+  }
+
   Replacer replacer(*settings_);
   CompilationCommand cc(path, argv);
   auto replaced_cc = replacer.Replace(cc);
 
-  if (replaced_cc) {
-    unset_ld_preload(&envp...);
-    {
-      InterceptorClient client(grpc::CreateChannel(
-          std::getenv("REPORT_URL"), grpc::InsecureChannelCredentials()));
-      client.ReportInterceptedCommand(cc, *replaced_cc);
-    }
+  if (!replaced_cc) return call(path, argv, envp...);
+
+  unset_ld_preload(&envp...);
+
+  {
+    InterceptorClient client(grpc::CreateChannel(
+        std::getenv("REPORT_URL"), grpc::InsecureChannelCredentials()));
+    client.ReportInterceptedCommand(cc, *replaced_cc);
   }
 
-  using exec_type = int (*)(const char *, char *const *, Args...);
-  auto call = reinterpret_cast<exec_type>(dlsym(RTLD_NEXT, fn_name));
-  return call(path, argv, envp...);
+  auto exec_arguments = prepare_arguments(*replaced_cc);
+  return call(replaced_cc->command.data(), exec_arguments.data(), envp...);
 }
 
 }  // namespace

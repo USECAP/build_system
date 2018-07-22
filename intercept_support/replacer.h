@@ -8,8 +8,12 @@
 
 class Replacer {
  public:
-  Replacer(const InterceptSettings &settings) : settings_(settings){};
+  explicit Replacer(const InterceptSettings &settings) : settings_(settings){};
 
+  /// Transforms original_cc according to a rule in settings if matched by that
+  /// rule. The new CompilationCommand contains an absolute command path.
+  /// @returns CompilationCommand if succeeds, nothing if no rule could be
+  /// matched or no absolute path could be found
   absl::optional<CompilationCommand> Replace(
       CompilationCommand original_cc) const;
 

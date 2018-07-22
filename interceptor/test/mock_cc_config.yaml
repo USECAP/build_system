@@ -1,0 +1,23 @@
+default_compiler: &compiler
+  add_arguments:
+  - "-g"
+  - "-O2"
+  remove_arguments:
+  - "-O0"
+  - "-O1"
+  - "-O3"
+  - "-fomit-frame-pointer"
+
+mock-cc:
+  toolchain:
+    cc:
+      <<: *compiler
+      match: "DEFAULT_CC"
+      replace: "mock-cc"
+
+    cxx:
+      <<: *compiler
+      match: "DEFAULT_CXX"
+      replace: "mock-c++"
+
+

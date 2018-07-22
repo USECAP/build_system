@@ -19,6 +19,8 @@ filegroup(
         "test/build.sh",
         "test/hello.c",
         "test/test_fuzzer_config.yaml",
+        "test/mock-cc",
+        "test/mock_cc_config.yaml"
     ],
     visibility = ["//:__subpackages__"],
 )
@@ -68,6 +70,14 @@ py_test(
     name = "integration_test",
     size = "small",
     srcs = ["test/integration_test.py"],
+    data = [":testdata"],
+    deps = [":intercept"],
+)
+
+py_test(
+    name = "acceptance_test",
+    size = "small",
+    srcs = ["test/acceptance_test.py"],
     data = [":testdata"],
     deps = [":intercept"],
 )
