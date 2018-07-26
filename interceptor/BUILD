@@ -18,9 +18,9 @@ filegroup(
     srcs = [
         "test/build.sh",
         "test/hello.c",
-        "test/test_fuzzer_config.yaml",
         "test/mock-cc",
-        "test/mock_cc_config.yaml"
+        "test/mock_cc_config.yaml",
+        "test/test_fuzzer_config.yaml",
     ],
     visibility = ["//:__subpackages__"],
 )
