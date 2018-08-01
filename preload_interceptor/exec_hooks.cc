@@ -1,6 +1,7 @@
 // Copyright (c) 2018 University of Bonn.
 
 #include <dlfcn.h>
+#include <fcntl.h>
 #include <unistd.h>
 #include <cstdarg>
 #include <iostream>
@@ -38,6 +39,13 @@ absl::optional<InterceptSettings> settings_;
 
 InterceptSettings *settings() {
   if (!settings_) {
+    auto reportUrl = std::getenv("REPORT_URL");
+    if (reportUrl == nullptr) {
+      std::cerr << "Error fetching settings: REPORT_URL not set!" << std::endl;
+      settings_ = InterceptSettings();
+      return &*settings_;
+    }
+
     InterceptorClient client(grpc::CreateChannel(
         std::getenv("REPORT_URL"), grpc::InsecureChannelCredentials()));
     auto maybe_settings = client.GetSettings();
@@ -77,9 +85,10 @@ int intercept(const char *fn_name, const char *path, char *const argv[],
 
   unset_ld_preload(&envp...);
 
-  {
-    InterceptorClient client(grpc::CreateChannel(
-        std::getenv("REPORT_URL"), grpc::InsecureChannelCredentials()));
+  auto reportUrl = std::getenv("REPORT_URL");
+  if (reportUrl != nullptr) {
+    InterceptorClient client(
+        grpc::CreateChannel(reportUrl, grpc::InsecureChannelCredentials()));
     client.ReportInterceptedCommand(cc, *replaced_cc);
   }
 

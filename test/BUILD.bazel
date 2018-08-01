@@ -1,0 +1,20 @@
+load("@io_bazel_rules_go//go:def.bzl", "go_test")
+
+filegroup(
+    name = "make_project",
+    srcs = glob(["data/make/**"]),
+)
+
+go_test(
+    name = "go_default_test",
+    timeout = "short",
+    srcs = ["intercept_test.go"],
+    data = [
+        ":make_project",
+        "//build_system/intercept",
+    ],
+    deps = [
+        "//build_system:go_default_library",
+        "@com_github_bazelbuild_rules_go//go/tools/bazel:go_default_library",
+    ],
+)

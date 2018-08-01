@@ -31,8 +31,7 @@ message InterceptSettingsRequest {
 }
 
 service Interceptor {
-  rpc GetInterceptSettings(InterceptSettingsRequest)
-      returns (InterceptSettings) {
+  rpc GetInterceptSettings(InterceptSettingsRequest) returns (InterceptSettings) {
   }
   rpc ReportInterceptedCommand(InterceptedCommand) returns (Status) {
   }

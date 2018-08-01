@@ -1,0 +1,25 @@
+load("@io_bazel_rules_go//go:def.bzl", "go_binary", "go_library")
+
+go_library(
+    name = "go_default_library",
+    srcs = [
+        "command_line.go",
+        "intercept.go",
+        "interceptor_service.go",
+    ],
+    data = ["//build_system/preload_interceptor:preload_interceptor.so"],
+    importpath = "gitlab.com/code-intelligence/core/build_system/intercept",
+    visibility = ["//visibility:private"],
+    deps = [
+        "//build_system:go_default_library",
+        "//build_system/proto:go_default_library",
+        "@com_github_bazelbuild_rules_go//go/tools/bazel:go_default_library",
+        "@org_golang_google_grpc//:go_default_library",
+    ],
+)
+
+go_binary(
+    name = "intercept",
+    embed = [":go_default_library"],
+    visibility = ["//visibility:public"],
+)
