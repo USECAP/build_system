@@ -8,7 +8,7 @@
 
 namespace {
 
-auto getArity(absl::string_view argument) {
+auto getArity(absl::string_view argument) -> int {
   int arity = 0;
 
   auto arity_it = CC_ARGUMENTS_INFO.find(argument);
