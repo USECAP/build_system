@@ -3,14 +3,14 @@ package test
 import (
 	"encoding/json"
 	"github.com/bazelbuild/rules_go/go/tools/bazel"
-	"gitlab.com/code-intelligence/core/build_system"
+	"gitlab.com/code-intelligence/core/build_system/types"
 	"io/ioutil"
+	"os"
 	"os/exec"
 	"path"
 	"path/filepath"
 	"reflect"
 	"testing"
-	"os"
 )
 
 func TestInterceptor(t *testing.T) {
@@ -47,12 +47,12 @@ func TestInterceptor(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	var commands []build_system.CompilationCommand
+	var commands []types.CompilationCommand
 	err = json.Unmarshal(db, &commands)
 	if err != nil {
 		t.Fatal(err)
 	}
-	expected := []build_system.CompilationCommand{{
+	expected := []types.CompilationCommand{{
 		Arguments: []string{"echo", "hello.c", "-o", "hello.o"},
 		Directory: cwd,
 		Output:    "hello.o",

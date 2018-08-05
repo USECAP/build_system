@@ -4,7 +4,7 @@ import (
 	"encoding/json"
 	"flag"
 	"github.com/bazelbuild/rules_go/go/tools/bazel"
-	"gitlab.com/code-intelligence/core/build_system"
+	"gitlab.com/code-intelligence/core/build_system/types"
 	pb "gitlab.com/code-intelligence/core/build_system/proto"
 	"google.golang.org/grpc"
 	"io/ioutil"
@@ -70,12 +70,12 @@ func main() {
 	}
 }
 
-func createCompilationDb(cmds []*pb.InterceptedCommand) (res []build_system.CompilationCommand) {
+func createCompilationDb(cmds []*pb.InterceptedCommand) (res []types.CompilationCommand) {
 	for _, cmd := range cmds {
 		log.Printf("cmd: %+v", cmd)
 		cl := commandLineFromInterceptedCommand(cmd)
 		for _, inputFile := range cl.inputFiles {
-			res = append(res, build_system.CompilationCommand{
+			res = append(res, types.CompilationCommand{
 				Arguments: cmd.ReplacedArguments,
 				Directory: cmd.Directory,
 				Output:    cl.outputFile,

@@ -1,4 +1,4 @@
-package build_system
+package types
 
 type CompilationCommand struct {
 	Arguments []string `json:"arguments"`

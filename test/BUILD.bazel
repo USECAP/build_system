@@ -14,7 +14,7 @@ go_test(
         "//build_system/intercept",
     ],
     deps = [
-        "//build_system:go_default_library",
+        "//build_system/types:go_default_library",
         "@com_github_bazelbuild_rules_go//go/tools/bazel:go_default_library",
     ],
 )
