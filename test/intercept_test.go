@@ -2,8 +2,6 @@ package test
 
 import (
 	"encoding/json"
-	"github.com/bazelbuild/rules_go/go/tools/bazel"
-	"gitlab.com/code-intelligence/core/build_system/types"
 	"io/ioutil"
 	"os"
 	"os/exec"
@@ -11,6 +9,9 @@ import (
 	"path/filepath"
 	"reflect"
 	"testing"
+
+	"github.com/bazelbuild/rules_go/go/tools/bazel"
+	"gitlab.com/code-intelligence/core/build_system/types"
 )
 
 func TestInterceptor(t *testing.T) {
