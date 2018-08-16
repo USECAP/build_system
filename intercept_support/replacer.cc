@@ -31,13 +31,6 @@ absl::optional<CompilationCommand> Replacer::Replace(
 
   cc.command = rule->replace_command();
 
-  auto command_path = get_absolute_command_path(std::move(cc.command));
-  if (!command_path) {
-    std::cerr << "No absolute path could be built.\n";
-    return {};
-  }
-
-  cc.command = *command_path;
   cc.arguments.front() = basename(cc.command);
   return cc;
 }

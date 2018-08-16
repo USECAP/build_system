@@ -3,22 +3,11 @@ package main
 import (
 	"context"
 	pb "gitlab.com/code-intelligence/core/build_system/proto"
-	"os"
+	"github.com/spf13/viper"
+	"fmt"
 )
 
-var (
-	replaceCommand string
-)
-
-func init() {
-	var ok bool
-	replaceCommand, ok = os.LookupEnv("CC")
-	if !ok {
-		replaceCommand = "cc"
-	}
-}
-
-const matchCommand = `^([^-]*-)*[mg]cc(-\d+(\.\d+){0,2})?$|` +
+const DefaultMatchCommand = `^([^-]*-)*[mg]cc(-\d+(\.\d+){0,2})?$|` +
 	`^([^-]*-)*clang(-\d+(\.\d+){0,2})?$|` +
 	`^(|i)cc$|^(g|)xlc$`
 
@@ -33,12 +22,13 @@ func newInterceptorService() *interceptorService {
 }
 
 func (*interceptorService) GetInterceptSettings(ctx context.Context, req *pb.InterceptSettingsRequest) (*pb.InterceptSettings, error) {
+	fmt.Println(viper.GetString("replace_command"))
 	return &pb.InterceptSettings{
 		MatchingRules: []*pb.MatchingRule{{
-			MatchCommand:    matchCommand,
-			ReplaceCommand:  replaceCommand,
-			AddArguments:    []string{},
-			RemoveArguments: []string{},
+			MatchCommand:    viper.GetString("match_command"),
+			ReplaceCommand:  viper.GetString("replace_command"),
+			AddArguments:    viper.GetStringSlice("add_arguments"),
+			RemoveArguments: viper.GetStringSlice("remove_arguments"),
 		}},
 	}, nil
 }

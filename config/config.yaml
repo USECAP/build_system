@@ -1,0 +1,7 @@
+fuzzers:
+  libfuzzer:
+    replace_command: "clang-6.0"
+    add_arguments: ["-fsanitize=fuzzer-no-link", "-O1"]
+  afl:
+    replace_command: "afl-gcc"
+    add_arguments: ["-O1"]

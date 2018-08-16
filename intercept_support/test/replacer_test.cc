@@ -70,8 +70,7 @@ TEST(Replacer, DoesReplaceCompilerCommand) {
     auto result = Replacer{settings}.Replace(std::move(tc.cc));
     ASSERT_TRUE(result) << "Replacer could not replace the compiler command.";
 
-    auto path_to_mock_cc = working_directory / fs::path(REPLACE_COMPILER);
-    EXPECT_EQ(result->command, path_to_mock_cc.string());
+    EXPECT_EQ(result->command, REPLACE_COMPILER);
     EXPECT_EQ(result->arguments, tc.expected_args);
   }
 
