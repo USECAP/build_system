@@ -1,7 +1,28 @@
+fuzzer_defaults: &fuzzer_defaults
+  remove_arguments:
+    - "-O1"
+    - "-O2"
+    - "-O3"
+    - "-O4"
+    - "-Ofast"
+    - "-Os"
+    - "-Oz"
+    - "-Og"
+  add_arguments:
+    - "-g"
+
 fuzzers:
   libfuzzer:
+    <<: *fuzzer_defaults
     replace_command: "clang-6.0"
-    add_arguments: ["-fsanitize=fuzzer-no-link", "-O1"]
+    remove_arguments+:
+      - "-fomit-frame-pointer"
+    add_arguments+:
+    - "-fno-omit-frame-pointer"
+    - "-fsanitize=fuzzer-no-link"
+    - "-Og"
   afl:
+    <<: *fuzzer_defaults
     replace_command: "afl-gcc"
-    add_arguments: ["-O1"]
+    add_arguments+:
+      - "-O1"
