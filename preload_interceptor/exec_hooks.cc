@@ -71,6 +71,8 @@ int intercept(const char *fn_name, const char *path, char *const argv[],
   using exec_type = int (*)(const char *, char *const *, Args...);
   auto call = reinterpret_cast<exec_type>(dlsym(RTLD_NEXT, fn_name));
 
+  std::cout << "call to " << path;
+
   auto settings_ = settings();
   if (!settings_) {
     std::cerr << "Settings could not be fetched!\n";
@@ -81,7 +83,10 @@ int intercept(const char *fn_name, const char *path, char *const argv[],
   CompilationCommand cc(path, argv);
   auto replaced_cc = replacer.Replace(cc);
 
-  if (!replaced_cc) return call(path, argv, envp...);
+  if (!replaced_cc) {
+    std::cout << " not replaced" << std::endl;
+    return call(path, argv, envp...);
+  }
 
   unset_ld_preload(&envp...);
 
@@ -93,6 +98,7 @@ int intercept(const char *fn_name, const char *path, char *const argv[],
   }
 
   auto exec_arguments = prepare_arguments(*replaced_cc);
+  std::cout << " replaced with " << replaced_cc->command.data() << std::endl;
   return call(replaced_cc->command.data(), exec_arguments.data(), envp...);
 }
 

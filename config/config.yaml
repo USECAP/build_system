@@ -14,7 +14,8 @@ fuzzer_defaults: &fuzzer_defaults
 fuzzers:
   libfuzzer:
     <<: *fuzzer_defaults
-    replace_command: "clang-6.0"
+    replace_cc: "clang-6.0"
+    replace_cxx: "clang++-6.0"
     remove_arguments+:
       - "-fomit-frame-pointer"
     add_arguments+:
@@ -23,6 +24,7 @@ fuzzers:
     - "-Og"
   afl:
     <<: *fuzzer_defaults
-    replace_command: "afl-gcc"
+    replace_cc: "afl-gcc"
+    replace_cxx: "afl-g++"
     add_arguments+:
       - "-O1"

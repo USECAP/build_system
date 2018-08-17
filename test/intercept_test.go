@@ -2,16 +2,15 @@ package test
 
 import (
 	"encoding/json"
+	"fmt"
 	"io/ioutil"
+	"log"
 	"os"
 	"os/exec"
 	"path"
+	"path/filepath"
 	"reflect"
 	"testing"
-
-	"fmt"
-	"log"
-	"path/filepath"
 
 	"github.com/bazelbuild/rules_go/go/tools/bazel"
 	"github.com/spf13/viper"
@@ -38,20 +37,15 @@ func readCompilationDb(dbFilePath string) (commands []types.CompilationCommand, 
 
 func readCompilationDbForExec(env []string, args ...string) (commands []types.CompilationCommand, err error) {
 	cmd := exec.Command(interceptPath, args...)
-	if env != nil {
-		cmd.Env = env
-	}
+	cmd.Env = env
 	cmd.Dir = cwd
 	out, err := cmd.CombinedOutput()
 	fmt.Println("out", string(out))
 	if err != nil {
-		err = fmt.Errorf("exec failed, error: %s, output: %s", err, string(out))
+		err = fmt.Errorf("exec failed, error: %s, stderr: %s, stdout: %s", err, cmd.Stderr, string(out))
 		return
 	}
 	commands, err = readCompilationDb(dbFilePath)
-	if err != nil {
-		return
-	}
 
 	return
 }
@@ -78,7 +72,7 @@ func TestInterceptor(t *testing.T) {
 }
 
 func TestMatchCommand(t *testing.T) {
-	commands, err := readCompilationDbForExec(nil, "--create_compiler_db", "--match_command", "gcc", "--replace_command", "clang-6.0", "make")
+	commands, err := readCompilationDbForExec(nil, "--create_compiler_db", "--match_cc", "gcc", "--replace_cc", "clang-6.0", "make")
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -104,22 +98,24 @@ func TestConfigs(t *testing.T) {
 	}
 
 	for fuzzer := range fuzzerConfigs {
-		fuzzerCompiler := viper.GetString("fuzzers." + fuzzer + ".replace_command")
-		fuzzerDefaultArgs := viper.GetStringSlice("fuzzers." + fuzzer + ".add_arguments")
-		commands, err := readCompilationDbForExec(nil, "--create_compiler_db", "--fuzzer", fuzzer, "make")
-		if err != nil {
-			t.Fatal(err)
-		}
+		for _, cc := range []string{"cc", "cxx"} {
+			fuzzerCompiler := viper.GetString("fuzzers." + fuzzer + ".replace_" + cc)
+			fuzzerDefaultArgs := viper.GetStringSlice("fuzzers." + fuzzer + ".add_arguments")
+			commands, err := readCompilationDbForExec(nil, "--create_compiler_db", "--fuzzer", fuzzer, "make", cc)
+			if err != nil {
+				t.Fatal(err)
+			}
 
-		expected := []types.CompilationCommand{{
-			Arguments: append([]string{fuzzerCompiler, "hello.c", "-o", "hello.o"}, fuzzerDefaultArgs...),
-			Directory: cwd,
-			Output:    "hello.o",
-			File:      "hello.c",
-		}}
+			expected := []types.CompilationCommand{{
+				Arguments: append([]string{fuzzerCompiler, "hello.c", "-o", "hello.o"}, fuzzerDefaultArgs...),
+				Directory: cwd,
+				Output:    "hello.o",
+				File:      "hello.c",
+			}}
 
-		if !reflect.DeepEqual(commands, expected) {
-			t.Errorf("expected %+v to equal %+v", commands, expected)
+			if !reflect.DeepEqual(commands, expected) {
+				t.Errorf("expected %+v to equal %+v", commands, expected)
+			}
 		}
 	}
 }
@@ -128,7 +124,10 @@ func TestMain(m *testing.M) {
 	base, err := bazel.RunfilesPath()
 	if err != nil {
 		log.Fatal(err)
-		os.Exit(-1)
+	}
+
+	if err = mockFuzzersInPath(); err != nil {
+		log.Fatal(err)
 	}
 
 	// read the default fuzzer configuration
@@ -151,4 +150,33 @@ func TestMain(m *testing.M) {
 
 	retCode := m.Run()
 	os.Exit(retCode)
+}
+
+func mockFuzzersInPath() (err error) {
+	fuzzers := []string{
+		"afl-gcc",
+		"afl-g++",
+		"afl-clang",
+		"clang",
+		"clang++",
+		"clang++-6.0",
+		"clang-6.0",
+	}
+	binDir, err := bazel.NewTmpDir("target")
+	if err != nil {
+		return
+	}
+	binDir, err = filepath.Abs(binDir)
+	if err != nil {
+		return
+	}
+	target, err := exec.LookPath("true")
+	if err != nil {
+		return
+	}
+	for _, fuzzer := range fuzzers {
+		os.Symlink(target, filepath.Join(binDir, fuzzer))
+	}
+	os.Setenv("PATH", os.Getenv("PATH")+":"+binDir)
+	return
 }

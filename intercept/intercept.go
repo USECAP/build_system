@@ -10,6 +10,7 @@ import (
 	"os"
 	"os/exec"
 	"path"
+	"path/filepath"
 
 	"github.com/bazelbuild/rules_go/go/tools/bazel"
 	"github.com/spf13/pflag"
@@ -21,7 +22,8 @@ import (
 
 const serverAddr = "localhost:6774"
 const compilerDbPath = "compile_commands.json"
-const preloadLibPath = "code_intelligence/build_system/preload_interceptor/preload_interceptor.so"
+const testPreloadLibPath = "code_intelligence/build_system/preload_interceptor/preload_interceptor.so"
+const prodPreloadLibPath = "../lib/code-intelligence/preload_interceptor.so"
 const CompilationDbFlag = "create_compiler_db"
 
 func init() {
@@ -41,11 +43,37 @@ func setDefaultValues() {
 		panic(fmt.Errorf("Fatal error config file: %s \n", err))
 	}
 	pflag.Bool(CompilationDbFlag, false, "Whether to create compilation database")
-	pflag.String("match_command", DefaultMatchCommand, "Override default match command")
-	pflag.String("replace_command", "cc", "Whether to create compilation database")
+	pflag.String("match_cc", ccMatchCommand, "Override default cc match command")
+	pflag.String("match_cxx", cxxMatchCommand, "Override default cxx match command")
+	pflag.String("replace_cc", "cc", "Whether to replace cc")
+	pflag.String("replace_cxx", "c++", "Whether to replace cxx")
 	pflag.String("fuzzer", "", "Whether a specific fuzzer config should be used")
 
-	viper.BindEnv("replace_command", "CC")
+	viper.BindEnv("replace_cc", "CC")
+	viper.BindEnv("replace_cxx", "CXX")
+}
+
+func preloadLibPath() string {
+	base, err := bazel.RunfilesPath()
+	if err != nil {
+		// Assume we run in production
+		return path.Join(executableDir(), prodPreloadLibPath)
+	}
+	return path.Join(base, testPreloadLibPath)
+}
+
+func executableDir() string {
+	executable, err := os.Executable()
+	if err != nil {
+		log.Fatalf("Error getting executable path: %s\n", err)
+	}
+
+	res, err := filepath.EvalSymlinks(executable)
+	if err != nil {
+		log.Fatalf("Error evaluating symlinks in path '%s': %s\n", executable, err)
+	}
+
+	return filepath.Dir(res)
 }
 
 func main() {
@@ -58,7 +86,8 @@ func main() {
 	// if the fuzzer argument is set, set new defaults from config file with that fuzzer name; if not found ignore
 	if desiredFuzzer := viper.GetString("fuzzer"); desiredFuzzer != "" && viper.IsSet("fuzzers."+desiredFuzzer) {
 		fuzzerConfigPrefix := "fuzzers." + desiredFuzzer + "."
-		viper.SetDefault("replace_command", viper.GetString(fuzzerConfigPrefix+"replace_command"))
+		viper.SetDefault("replace_cc", viper.GetString(fuzzerConfigPrefix+"replace_cc"))
+		viper.SetDefault("replace_cxx", viper.GetString(fuzzerConfigPrefix+"replace_cxx"))
 		viper.SetDefault("add_arguments", viper.GetStringSlice(fuzzerConfigPrefix+"add_arguments"))
 		viper.SetDefault("remove_arguments", viper.GetStringSlice(fuzzerConfigPrefix+"remove_arguments"))
 	}
@@ -72,26 +101,21 @@ func main() {
 	var interceptedCommands []*pb.InterceptedCommand
 	go func() {
 		for c := range service.interceptedCommands {
+			fmt.Printf("%+v\n", c)
 			interceptedCommands = append(interceptedCommands, c)
 		}
 	}()
 
-	base, err := bazel.RunfilesPath()
-	if err != nil {
-		log.Fatal("Runfiles base not found: ", err)
-	}
-
 	env := os.Environ()
-	env = append(env, "LD_PRELOAD="+path.Join(base, preloadLibPath))
+	env = append(env, "LD_PRELOAD="+preloadLibPath())
 	env = append(env, "REPORT_URL="+serverAddr)
 	cmd := exec.Command(buildCmd[0], buildCmd[1:]...)
 	cmd.Env = env
 	out, err := cmd.CombinedOutput()
+	log.Print("out:\n", string(out))
 	if err != nil {
 		log.Fatal("command crashed: ", err)
 	}
-
-	log.Print("out:\n", string(out))
 
 	if viper.GetBool("create_compiler_db") {
 		commands := createCompilationDb(interceptedCommands)

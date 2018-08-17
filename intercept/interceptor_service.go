@@ -2,13 +2,20 @@ package main
 
 import (
 	"context"
-	pb "gitlab.com/code-intelligence/core/build_system/proto"
-	"github.com/spf13/viper"
 	"fmt"
+
+	"github.com/spf13/viper"
+
+	pb "gitlab.com/code-intelligence/core/build_system/proto"
 )
 
-const DefaultMatchCommand = `^([^-]*-)*[mg]cc(-\d+(\.\d+){0,2})?$|` +
+const ccMatchCommand = `^([^-]*-)*[mg]cc(-\d+(\.\d+){0,2})?$|` +
 	`^([^-]*-)*clang(-\d+(\.\d+){0,2})?$|` +
+	`^(|i)cc$|^(g|)xlc$`
+
+// TOOD(perl): check that regex is correct.
+const cxxMatchCommand = `^([^-]*-)*[cmg]\+\+(-\d+(\.\d+){0,2})?$|` +
+	`^([^-]*-)*clang\+\+(-\d+(\.\d+){0,2})?$|` +
 	`^(|i)cc$|^(g|)xlc$`
 
 type interceptorService struct {
@@ -22,11 +29,16 @@ func newInterceptorService() *interceptorService {
 }
 
 func (*interceptorService) GetInterceptSettings(ctx context.Context, req *pb.InterceptSettingsRequest) (*pb.InterceptSettings, error) {
-	fmt.Println(viper.GetString("replace_command"))
+	fmt.Println(viper.GetString("replace_cc"))
 	return &pb.InterceptSettings{
 		MatchingRules: []*pb.MatchingRule{{
-			MatchCommand:    viper.GetString("match_command"),
-			ReplaceCommand:  viper.GetString("replace_command"),
+			MatchCommand:    viper.GetString("match_cc"),
+			ReplaceCommand:  viper.GetString("replace_cc"),
+			AddArguments:    viper.GetStringSlice("add_arguments"),
+			RemoveArguments: viper.GetStringSlice("remove_arguments"),
+		}, {
+			MatchCommand:    viper.GetString("match_cxx"),
+			ReplaceCommand:  viper.GetString("replace_cxx"),
 			AddArguments:    viper.GetStringSlice("add_arguments"),
 			RemoveArguments: viper.GetStringSlice("remove_arguments"),
 		}},
