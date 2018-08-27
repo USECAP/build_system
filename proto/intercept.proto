@@ -3,11 +3,9 @@ syntax = "proto3";
 message InterceptedCommand {
   string   original_command          = 1;
   repeated string original_arguments = 2;
-
-  string   replaced_command          = 3;
+  string          replaced_command   = 3;
   repeated string replaced_arguments = 4;
-
-  string directory = 5;
+  string          directory          = 5;  // The working directory of the compilation.
 }
 
 message MatchingRule {

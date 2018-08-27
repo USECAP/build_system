@@ -42,7 +42,9 @@ func readCompilationDbForExec(env []string, args ...string) (commands []types.Co
 	out, err := cmd.CombinedOutput()
 	fmt.Println("out", string(out))
 	if err != nil {
-		err = fmt.Errorf("exec failed, error: %s, stderr: %s, stdout: %s", err, cmd.Stderr, string(out))
+		err = fmt.Errorf(
+			"exec failed, error: %s, stderr: %s, stdout: %s",
+			err, cmd.Stderr, string(out))
 		return
 	}
 	commands, err = readCompilationDb(dbFilePath)
@@ -51,7 +53,6 @@ func readCompilationDbForExec(env []string, args ...string) (commands []types.Co
 }
 
 func TestInterceptor(t *testing.T) {
-
 	env := os.Environ()
 	env = append(env, "CC=echo")
 	commands, err := readCompilationDbForExec(env, "--create_compiler_db", "make")
@@ -66,13 +67,24 @@ func TestInterceptor(t *testing.T) {
 		File:      "hello.c",
 	}}
 
-	if !reflect.DeepEqual(commands, expected) {
-		t.Errorf("expected %+v to equal %+v", commands, expected)
+	assertCommandsAreEqual(t, commands, expected)
+}
+
+func assertCommandsAreEqual(t *testing.T, actual, expected []types.CompilationCommand) {
+	t.Helper()
+	if !reflect.DeepEqual(actual, expected) {
+		t.Errorf(`Commands did not match.
+expected: %+v
+got:      %+v`, expected, actual)
 	}
 }
 
 func TestMatchCommand(t *testing.T) {
-	commands, err := readCompilationDbForExec(nil, "--create_compiler_db", "--match_cc", "gcc", "--replace_cc", "clang-6.0", "make")
+	commands, err := readCompilationDbForExec(nil,
+		"--create_compiler_db",
+		"--match_cc", "gcc",
+		"--replace_cc", "clang-6.0",
+		"make")
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -84,11 +96,9 @@ func TestMatchCommand(t *testing.T) {
 		File:      "hello.c",
 	}}
 
-	if !reflect.DeepEqual(commands, expected) {
-		t.Errorf("expected %+v to equal %+v", commands, expected)
-	}
-
+	assertCommandsAreEqual(t, commands, expected)
 }
+
 func TestConfigs(t *testing.T) {
 	fuzzers := viper.Sub("fuzzers")
 	var fuzzerConfigs map[string]interface{}
@@ -107,15 +117,15 @@ func TestConfigs(t *testing.T) {
 			}
 
 			expected := []types.CompilationCommand{{
-				Arguments: append([]string{fuzzerCompiler, "hello.c", "-o", "hello.o"}, fuzzerDefaultArgs...),
+				Arguments: append(
+					[]string{fuzzerCompiler, "hello.c", "-o", "hello.o"},
+					fuzzerDefaultArgs...),
 				Directory: cwd,
 				Output:    "hello.o",
 				File:      "hello.c",
 			}}
 
-			if !reflect.DeepEqual(commands, expected) {
-				t.Errorf("expected %+v to equal %+v", commands, expected)
-			}
+			assertCommandsAreEqual(t, commands, expected)
 		}
 	}
 }
@@ -131,7 +141,8 @@ func TestMain(m *testing.M) {
 	}
 
 	// read the default fuzzer configuration
-	viper.SetConfigFile(path.Join(base, "code_intelligence", "build_system", "config", "config.yaml"))
+	viper.SetConfigFile(path.Join(base,
+		"code_intelligence", "build_system", "config", "config.yaml"))
 	err = viper.ReadInConfig()
 	if err != nil {
 		panic(fmt.Errorf("Fatal error config file: %s \n", err))

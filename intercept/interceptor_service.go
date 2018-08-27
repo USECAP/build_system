@@ -28,7 +28,9 @@ func newInterceptorService() *interceptorService {
 	return s
 }
 
-func (*interceptorService) GetInterceptSettings(ctx context.Context, req *pb.InterceptSettingsRequest) (*pb.InterceptSettings, error) {
+func (*interceptorService) GetInterceptSettings(ctx context.Context,
+	req *pb.InterceptSettingsRequest) (*pb.InterceptSettings, error) {
+
 	fmt.Println(viper.GetString("replace_cc"))
 	return &pb.InterceptSettings{
 		MatchingRules: []*pb.MatchingRule{{
@@ -45,7 +47,9 @@ func (*interceptorService) GetInterceptSettings(ctx context.Context, req *pb.Int
 	}, nil
 }
 
-func (s *interceptorService) ReportInterceptedCommand(ctx context.Context, req *pb.InterceptedCommand) (*pb.Status, error) {
+func (s *interceptorService) ReportInterceptedCommand(ctx context.Context,
+	req *pb.InterceptedCommand) (*pb.Status, error) {
+
 	s.interceptedCommands <- req
 	return &pb.Status{}, nil
 }

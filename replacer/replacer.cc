@@ -1,9 +1,8 @@
 // Copyright (c) 2018 University of Bonn.
 
-#include "build_system/intercept_support/replacer.h"
-#include "build_system/intercept_support/cc_arg_info.h"
-#include "build_system/utility/filesystem.h"
-#include "build_system/utility/path.h"
+#include "build_system/replacer/replacer.h"
+#include "build_system/replacer/cc_arg_info.h"
+#include "build_system/replacer/path.h"
 #include "re2/re2.h"
 
 namespace {
@@ -56,7 +55,7 @@ void Replacer::RemoveArguments(CompilationCommand::ArgsT *arguments,
 
 absl::optional<MatchingRule> Replacer::GetMatchingRule(
     std::string command_path) const {
-  auto command = fs::path(std::move(command_path)).filename().string();
+  auto command = basename(command_path);
 
   for (auto rule : settings_.matching_rules()) {
     if (RE2::FullMatch(command, rule.match_command())) {

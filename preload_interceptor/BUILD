@@ -6,14 +6,13 @@ cc_binary(
     ]),
     linkopts = [
         "-ldl",
-        "-lstdc++fs",
     ],
     linkshared = 1,
     linkstatic = 1,
     visibility = ["//visibility:public"],
     deps = [
-        "//build_system/intercept_support",
         "//build_system/proto:cpp",
+        "//build_system/replacer",
         "@abseil//absl/types:optional",
     ],
 )

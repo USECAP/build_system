@@ -1,4 +1,4 @@
-#include "build_system/intercept_support/compilation_command.h"
+#include "build_system/replacer/compilation_command.h"
 #include "gtest/gtest.h"
 
 TEST(CompilationCommand, ConstructFromCArgsArray) {

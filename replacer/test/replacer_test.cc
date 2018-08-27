@@ -1,10 +1,9 @@
 // Copyright (c) 2018 University of Bonn.
 
-#include "build_system/intercept_support/replacer.h"
+#include "build_system/replacer/replacer.h"
+#include "build_system/replacer/path.h"
 #include "absl/strings/match.h"
 #include "absl/strings/string_view.h"
-#include "build_system/utility/filesystem.h"
-#include "build_system/utility/utility.h"
 #include "gtest/gtest.h"
 
 namespace {
@@ -56,11 +55,11 @@ const ReplacerTestCase ReplacerTestCases[] = {
 }  // namespace
 
 TEST(Replacer, DoesReplaceCompilerCommand) {
-  auto working_directory = fs::current_path();
+  auto working_directory = current_directory();
 
   // setup environment
-  fclose(fopen(REPLACE_COMPILER, "w"));
-  std::string environment = "PATH=" + working_directory.string();
+  touch(REPLACE_COMPILER);
+  std::string environment = "PATH=" + working_directory;
   putenv(const_cast<char *>(environment.data()));
 
   for (auto tc : ReplacerTestCases) {
@@ -74,7 +73,7 @@ TEST(Replacer, DoesReplaceCompilerCommand) {
     EXPECT_EQ(result->arguments, tc.expected_args);
   }
 
-  fs::remove(working_directory / fs::path(REPLACE_COMPILER));
+  remove((working_directory + REPLACE_COMPILER).data());
 }
 
 TEST(Replacer, EmptyReplacement_ShouldKeepOriginalCommand) {

@@ -8,7 +8,6 @@ go_library(
         "interceptor_service.go",
     ],
     data = [
-        "//build_system/config",
         "//build_system/preload_interceptor:preload_interceptor.so",
     ],
     importpath = "gitlab.com/code-intelligence/core/build_system/intercept",

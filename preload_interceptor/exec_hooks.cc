@@ -7,11 +7,18 @@
 #include <iostream>
 #include <vector>
 #include "absl/types/optional.h"
-#include "build_system/intercept_support/replacer.h"
+#include "build_system/replacer/replacer.h"
 #include "intercept_settings.h"
 
 namespace {
 
+void unhook() { unsetenv("LD_PRELOAD"); }
+
+void unhook(char *const **envp) {
+  // TODO Clear environment from parameter
+}
+
+/// converts a va_list of char* to a vector
 std::vector<char *> list_to_vector(va_list &args, const char *first_arg) {
   std::vector<char *> result;
   auto next_arg = (char *)first_arg;
@@ -22,7 +29,8 @@ std::vector<char *> list_to_vector(va_list &args, const char *first_arg) {
   return result;
 }
 
-std::vector<char *> prepare_arguments(const CompilationCommand &cc) {
+/// prepares the CompilationCommand arguments so they can be passed to exec
+std::vector<char *> to_argv(const CompilationCommand &cc) {
   std::vector<char *> arguments;
   arguments.reserve(16);
 
@@ -35,74 +43,81 @@ std::vector<char *> prepare_arguments(const CompilationCommand &cc) {
   return arguments;
 }
 
-absl::optional<InterceptSettings> settings_;
-
-InterceptSettings *settings() {
-  if (!settings_) {
-    auto reportUrl = std::getenv("REPORT_URL");
-    if (reportUrl == nullptr) {
-      std::cerr << "Error fetching settings: REPORT_URL not set!" << std::endl;
-      settings_ = InterceptSettings();
-      return &*settings_;
-    }
-
-    InterceptorClient client(grpc::CreateChannel(
-        std::getenv("REPORT_URL"), grpc::InsecureChannelCredentials()));
-    auto maybe_settings = client.GetSettings();
-    if (!maybe_settings) {
-      std::cerr << "Error fetching settings!" << std::endl;
-      settings_ = InterceptSettings();
-    } else {
-      settings_ = *maybe_settings;
-    }
+absl::optional<InterceptSettings> fetch_settings() {
+  auto reportUrl = std::getenv("REPORT_URL");
+  if (!reportUrl) {
+    std::cerr << "Error fetching settings: REPORT_URL not set!" << std::endl;
+    return {};
   }
-  return &*settings_;
+
+  InterceptorClient client(grpc::CreateChannel(
+      std::getenv("REPORT_URL"), grpc::InsecureChannelCredentials()));
+
+  auto maybe_settings = client.GetSettings();
+  if (!maybe_settings) {
+    std::cerr << "Error fetching settings!" << std::endl;
+    return {};
+  }
+
+  return maybe_settings;
 }
 
-void unset_ld_preload() { unsetenv("LD_PRELOAD"); }
+/// tries to fetch the settings from the grpc server and returns them
+absl::optional<InterceptSettings> &get_settings() {
+  static absl::optional<InterceptSettings> settings{};
+  if (!settings) settings = fetch_settings();
+  return settings;
+}
 
-void unset_ld_preload(char *const **envp) {
-  // TODO Clear environment from parameter
+/// replaces cmd according to the configuration if possible
+absl::optional<CompilationCommand>
+replace_compilation_command(CompilationCommand cmd) {
+  auto settings = get_settings();
+  if (!settings) {
+    std::cerr << "Settings could not be fetched!\n";
+    return {};
+  }
+
+  Replacer replacer(*settings);
+  return replacer.Replace(std::move(cmd));
+}
+
+/// reports the original and replaced compilation commands to the grpc server
+/// if possible
+void report_replacement(const CompilationCommand &original,
+                        const CompilationCommand &replaced) {
+  auto reportUrl = std::getenv("REPORT_URL");
+  if (reportUrl != nullptr) {
+    InterceptorClient client(
+        grpc::CreateChannel(reportUrl, grpc::InsecureChannelCredentials()));
+    client.ReportInterceptedCommand(original, replaced);
+  }
 }
 
 template <typename... Args>
 int intercept(const char *fn_name, const char *path, char *const argv[],
               Args... envp) {
   using exec_type = int (*)(const char *, char *const *, Args...);
-  auto call = reinterpret_cast<exec_type>(dlsym(RTLD_NEXT, fn_name));
+  auto original_exec = reinterpret_cast<exec_type>(dlsym(RTLD_NEXT, fn_name));
 
-  std::cout << "call to " << path;
+  CompilationCommand command(path, argv);
 
-  auto settings_ = settings();
-  if (!settings_) {
-    std::cerr << "Settings could not be fetched!\n";
-    return call(path, argv, envp...);
+  auto replaced_command = replace_compilation_command(command);
+  if (!replaced_command) {
+    std::cerr << "Command could not be replaced!\n";
+    return original_exec(path, argv, envp...);
   }
 
-  Replacer replacer(*settings_);
-  CompilationCommand cc(path, argv);
-  auto replaced_cc = replacer.Replace(cc);
+  report_replacement(command, *replaced_command);
 
-  if (!replaced_cc) {
-    std::cout << " not replaced" << std::endl;
-    return call(path, argv, envp...);
-  }
+  unhook(&envp...);
+  auto exec_arguments = to_argv(*replaced_command);
 
-  unset_ld_preload(&envp...);
-
-  auto reportUrl = std::getenv("REPORT_URL");
-  if (reportUrl != nullptr) {
-    InterceptorClient client(
-        grpc::CreateChannel(reportUrl, grpc::InsecureChannelCredentials()));
-    client.ReportInterceptedCommand(cc, *replaced_cc);
-  }
-
-  auto exec_arguments = prepare_arguments(*replaced_cc);
-  std::cout << " replaced with " << replaced_cc->command.data() << std::endl;
-  return call(replaced_cc->command.data(), exec_arguments.data(), envp...);
+  return original_exec(replaced_command->command.data(),
+                       exec_arguments.data(), envp...);
 }
 
-}  // namespace
+} // namespace
 
 extern "C" {
 

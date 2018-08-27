@@ -7,7 +7,7 @@
 #include <grpc++/grpc++.h>
 
 #include "absl/types/optional.h"
-#include "build_system/intercept_support/compilation_command.h"
+#include "build_system/replacer/compilation_command.h"
 #include "build_system/proto/intercept.grpc.pb.h"
 
 /**

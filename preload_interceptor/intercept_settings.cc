@@ -1,13 +1,8 @@
 // Copyright (c) 2018 University of Bonn.
 
 #include "intercept_settings.h"
-#ifdef CXX17
-#include <filesystem>
-namespace fs = std::filesystem;
-#else
-#include <experimental/filesystem>
-namespace fs = std::experimental::filesystem;
-#endif
+#include "build_system/replacer/path.h"
+#include <unistd.h>
 
 InterceptorClient::InterceptorClient(std::shared_ptr<grpc::Channel> channel)
     : stub_(Interceptor::NewStub(channel)) {}
@@ -33,7 +28,8 @@ void InterceptorClient::ReportInterceptedCommand(
     const CompilationCommand& orig_cc, const CompilationCommand& new_cc) {
   grpc::ClientContext context;
   Status response;
-  auto cwd = fs::current_path();
+
+  auto cwd = current_directory();
   InterceptedCommand cmd;
   cmd.set_original_command(orig_cc.command);
   cmd.set_replaced_command(new_cc.command);
