@@ -27,4 +27,15 @@ fuzzers:
     replace_cc: "afl-gcc"
     replace_cxx: "afl-g++"
     add_arguments+:
-      - "-O1"
+      - "-O0"
+  llvm-cov:
+    <<: *fuzzer_defaults
+    replace_cc: "clang-6.0"
+    replace_cxx: "clang++-6.0"
+    remove_arguments+:
+      - "-fomit-frame-pointer"
+    add_arguments+:
+    - "-fno-omit-frame-pointer"
+    - "-fprofile-instr-generate"
+    - "-fcoverage-mapping"
+    - "/home/user/workspace/StandaloneFuzzTargetMain.c"
