@@ -14,8 +14,8 @@ fuzzer_defaults: &fuzzer_defaults
 fuzzers:
   libfuzzer:
     <<: *fuzzer_defaults
-    replace_cc: "clang-6.0"
-    replace_cxx: "clang++-6.0"
+    replace_cc: "clang"
+    replace_cxx: "clang++"
     remove_arguments+:
       - "-fomit-frame-pointer"
     add_arguments+:
@@ -30,12 +30,12 @@ fuzzers:
       - "-O0"
   llvm-cov:
     <<: *fuzzer_defaults
-    replace_cc: "clang-6.0"
-    replace_cxx: "clang++-6.0"
+    replace_cc: "clang"
+    replace_cxx: "clang++"
     remove_arguments+:
       - "-fomit-frame-pointer"
     add_arguments+:
+    - "-O0"
     - "-fno-omit-frame-pointer"
     - "-fprofile-instr-generate"
     - "-fcoverage-mapping"
-    - "/home/user/workspace/StandaloneFuzzTargetMain.c"

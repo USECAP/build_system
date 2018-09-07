@@ -13,7 +13,11 @@ go_test(
         ":make_project",
         "//build_system/config",
         "//build_system/intercept",
+        "@afl",
+        "@llvm//:bin/clang",
+        "@llvm//:bin/clang++",
     ],
+    visibility = ["//visibility:public"],
     deps = [
         "//build_system/types:go_default_library",
         "@com_github_bazelbuild_rules_go//go/tools/bazel:go_default_library",

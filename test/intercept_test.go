@@ -15,6 +15,7 @@ import (
 	"github.com/bazelbuild/rules_go/go/tools/bazel"
 	"github.com/spf13/viper"
 	"gitlab.com/code-intelligence/core/build_system/types"
+	"strings"
 )
 
 var (
@@ -83,14 +84,14 @@ func TestMatchCommand(t *testing.T) {
 	commands, err := readCompilationDbForExec(nil,
 		"--create_compiler_db",
 		"--match_cc", "gcc",
-		"--replace_cc", "clang-6.0",
+		"--replace_cc", "clang",
 		"make")
 	if err != nil {
 		t.Fatal(err)
 	}
 
 	expected := []types.CompilationCommand{{
-		Arguments: []string{"clang-6.0", "-O2", "hello.c", "-o", "hello.o"},
+		Arguments: []string{"clang", "-O2", "hello.c", "-o", "hello.o"},
 		Directory: cwd,
 		Output:    "hello.o",
 		File:      "hello.c",
@@ -136,7 +137,7 @@ func TestMain(m *testing.M) {
 		log.Fatal(err)
 	}
 
-	if err = mockFuzzersInPath(); err != nil {
+	if err := useShippedCompiler(); err != nil {
 		log.Fatal(err)
 	}
 
@@ -163,31 +164,20 @@ func TestMain(m *testing.M) {
 	os.Exit(retCode)
 }
 
-func mockFuzzersInPath() (err error) {
-	fuzzers := []string{
-		"afl-gcc",
-		"afl-g++",
-		"afl-clang",
-		"clang",
-		"clang++",
-		"clang++-6.0",
-		"clang-6.0",
-	}
-	binDir, err := bazel.NewTmpDir("target")
+func useShippedCompiler() (err error) {
+	clang, err := bazel.Runfile(filepath.Join("llvm", "bin", "clang"))
 	if err != nil {
-		return
+		return fmt.Errorf("clang not found", err)
 	}
-	binDir, err = filepath.Abs(binDir)
+	clangDir, _ := filepath.Split(clang)
+	afl, err := bazel.Runfile(filepath.Join("afl", "afl-gcc"))
 	if err != nil {
-		return
+		return fmt.Errorf("afl not found", err)
 	}
-	target, err := exec.LookPath("true")
-	if err != nil {
-		return
-	}
-	for _, fuzzer := range fuzzers {
-		os.Symlink(target, filepath.Join(binDir, fuzzer))
-	}
-	os.Setenv("PATH", os.Getenv("PATH")+":"+binDir)
+	aflDir, _ := filepath.Split(afl)
+
+	paths := []string{clangDir, aflDir, os.Getenv("PATH")}
+	os.Setenv("PATH", strings.Join(paths, string(os.PathListSeparator)))
+	os.Setenv("AFL_PATH", filepath.Join(aflDir, "helpers"))
 	return
 }

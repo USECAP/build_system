@@ -2,8 +2,6 @@ package main
 
 import (
 	"context"
-	"fmt"
-
 	"github.com/spf13/viper"
 
 	pb "gitlab.com/code-intelligence/core/build_system/proto"
@@ -31,7 +29,6 @@ func newInterceptorService() *interceptorService {
 func (*interceptorService) GetInterceptSettings(ctx context.Context,
 	req *pb.InterceptSettingsRequest) (*pb.InterceptSettings, error) {
 
-	fmt.Println(viper.GetString("replace_cc"))
 	return &pb.InterceptSettings{
 		MatchingRules: []*pb.MatchingRule{{
 			MatchCommand:    viper.GetString("match_cc"),
