@@ -10,12 +10,12 @@ import (
 	"path"
 	"path/filepath"
 	"reflect"
+	"strings"
 	"testing"
 
 	"github.com/bazelbuild/rules_go/go/tools/bazel"
 	"github.com/spf13/viper"
 	"gitlab.com/code-intelligence/core/build_system/types"
-	"strings"
 )
 
 var (
@@ -56,19 +56,30 @@ func readCompilationDbForExec(env []string, args ...string) (commands []types.Co
 func TestInterceptor(t *testing.T) {
 	env := os.Environ()
 	env = append(env, "CC=echo")
-	commands, err := readCompilationDbForExec(env, "--create_compiler_db", "make")
+
+	buildSh, err := bazel.Runfile(
+		"code_intelligence/build_system/test/data/build_sh/build.sh")
 	if err != nil {
 		t.Fatal(err)
 	}
 
-	expected := []types.CompilationCommand{{
-		Arguments: []string{"echo", "-O2", "hello.c", "-o", "hello.o"},
-		Directory: cwd,
-		Output:    "hello.o",
-		File:      "hello.c",
-	}}
+	testCommands := []string{"make", buildSh}
+	for _, cmd := range testCommands {
+		commands, err := readCompilationDbForExec(
+			env, "--create_compiler_db", cmd)
+		if err != nil {
+			t.Fatal(err)
+		}
 
-	assertCommandsAreEqual(t, commands, expected)
+		expected := []types.CompilationCommand{{
+			Arguments: []string{"echo", "-O2", "hello.c", "-o", "hello.o"},
+			Directory: cwd,
+			Output:    "hello.o",
+			File:      "hello.c",
+		}}
+
+		assertCommandsAreEqual(t, commands, expected)
+	}
 }
 
 func assertCommandsAreEqual(t *testing.T, actual, expected []types.CompilationCommand) {

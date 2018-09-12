@@ -5,11 +5,17 @@ filegroup(
     srcs = glob(["data/make/**"]),
 )
 
+filegroup(
+    name = "build_sh_project",
+    srcs = glob(["data/build_sh/**"]),
+)
+
 go_test(
     name = "go_default_test",
     timeout = "short",
     srcs = ["intercept_test.go"],
     data = [
+        ":build_sh_project",
         ":make_project",
         "//build_system/config",
         "//build_system/intercept",
