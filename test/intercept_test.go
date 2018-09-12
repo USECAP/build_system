@@ -167,12 +167,12 @@ func TestMain(m *testing.M) {
 func useShippedCompiler() (err error) {
 	clang, err := bazel.Runfile(filepath.Join("llvm", "bin", "clang"))
 	if err != nil {
-		return fmt.Errorf("clang not found", err)
+		return fmt.Errorf("clang not found: %v", err)
 	}
 	clangDir, _ := filepath.Split(clang)
 	afl, err := bazel.Runfile(filepath.Join("afl", "afl-gcc"))
 	if err != nil {
-		return fmt.Errorf("afl not found", err)
+		return fmt.Errorf("afl not found: %v", err)
 	}
 	aflDir, _ := filepath.Split(afl)
 

@@ -14,8 +14,7 @@ go_test(
         "//build_system/config",
         "//build_system/intercept",
         "@afl",
-        "@llvm//:bin/clang",
-        "@llvm//:bin/clang++",
+        "@llvm//:clang",
     ],
     visibility = ["//visibility:public"],
     deps = [
