@@ -48,6 +48,16 @@ func setDefaultValues() {
 	viper.BindEnv("replace_cxx", "CXX")
 }
 
+func configFilePath() string {
+	base, err := bazel.RunfilesPath()
+	if err != nil {
+		// Assume we run in production
+		// XXX: Use our path library
+		return path.Join(executableDir(), "../share/code-intelligence/config.yaml")
+	}
+	return path.Join(base, "code_intelligence", "build_system", "config", "config.yaml")
+}
+
 func preloadLibPath() string {
 	base, err := bazel.RunfilesPath()
 	if err != nil {
@@ -55,16 +65,6 @@ func preloadLibPath() string {
 		return path.Join(executableDir(), prodPreloadLibPath)
 	}
 	return path.Join(base, testPreloadLibPath)
-}
-
-func configFilePath() string {
-	base, err := bazel.RunfilesPath()
-	if err != nil {
-		// Assume we run in production
-		return path.Join(executableDir(), "config.yaml")
-	}
-	return path.Join(base, "code_intelligence", "build_system", "config", "config.yaml")
-
 }
 
 func executableDir() string {
