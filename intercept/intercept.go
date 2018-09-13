@@ -23,7 +23,7 @@ import (
 const serverAddr = "localhost:6774"
 const compilerDbPath = "compile_commands.json"
 const testPreloadLibPath = "code_intelligence/build_system/preload_interceptor/preload_interceptor.so"
-const prodPreloadLibPath = "../lib/code-intelligence/preload_interceptor.so"
+const prodPreloadLibPath = "preload_interceptor.so"
 const CompilationDbFlag = "create_compiler_db"
 
 func init() {
@@ -32,13 +32,8 @@ func init() {
 
 func setDefaultValues() {
 
-	base, err := bazel.RunfilesPath()
-	if err != nil {
-		log.Fatal("Runfiles base not found: ", err)
-	}
-
-	viper.SetConfigFile(path.Join(base, "code_intelligence", "build_system", "config", "config.yaml"))
-	err = viper.ReadInConfig()
+	viper.SetConfigFile(configFilePath())
+	err := viper.ReadInConfig()
 	if err != nil {
 		panic(fmt.Errorf("Fatal error config file: %s \n", err))
 	}
@@ -60,6 +55,16 @@ func preloadLibPath() string {
 		return path.Join(executableDir(), prodPreloadLibPath)
 	}
 	return path.Join(base, testPreloadLibPath)
+}
+
+func configFilePath() string {
+	base, err := bazel.RunfilesPath()
+	if err != nil {
+		// Assume we run in production
+		return path.Join(executableDir(), "config.yaml")
+	}
+	return path.Join(base, "code_intelligence", "build_system", "config", "config.yaml")
+
 }
 
 func executableDir() string {

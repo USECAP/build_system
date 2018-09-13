@@ -82,6 +82,24 @@ func TestInterceptor(t *testing.T) {
 	}
 }
 
+func TestInterceptorBashScript(t *testing.T) {
+	env := os.Environ()
+	env = append(env, "CC=echo")
+	commands, err := readCompilationDbForExec(env, "--create_compiler_db", "./build.sh")
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	expected := []types.CompilationCommand{{
+		Arguments: []string{"echo", "-O2", "hello.c", "-o", "hello.o"},
+		Directory: cwd,
+		Output:    "hello.o",
+		File:      "hello.c",
+	}}
+
+	assertCommandsAreEqual(t, commands, expected)
+}
+
 func assertCommandsAreEqual(t *testing.T, actual, expected []types.CompilationCommand) {
 	t.Helper()
 	if !reflect.DeepEqual(actual, expected) {

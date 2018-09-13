@@ -3,5 +3,5 @@ filegroup(
     srcs = [
         "config.yaml",
     ],
-    visibility = ["//build_system:__subpackages__"],
+    visibility = ["//visibility:public"],
 )
