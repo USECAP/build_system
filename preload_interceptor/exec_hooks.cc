@@ -2,6 +2,7 @@
 
 #include <dlfcn.h>
 #include <fcntl.h>
+#include <google/protobuf/text_format.h>
 #include <unistd.h>
 #include <cstdarg>
 #include <iostream>
@@ -43,42 +44,19 @@ std::vector<char *> to_argv(const CompilationCommand &cc) {
   return arguments;
 }
 
-absl::optional<InterceptSettings> fetch_settings() {
-  auto reportUrl = std::getenv("REPORT_URL");
-  if (!reportUrl) {
-    std::cerr << "Error fetching settings: REPORT_URL not set!" << std::endl;
-    return {};
-  }
-
-  InterceptorClient client(grpc::CreateChannel(
-      std::getenv("REPORT_URL"), grpc::InsecureChannelCredentials()));
-
-  auto maybe_settings = client.GetSettings();
-  if (!maybe_settings) {
-    std::cerr << "Error fetching settings!" << std::endl;
-    return {};
-  }
-
-  return maybe_settings;
-}
-
-/// tries to fetch the settings from the grpc server and returns them
-absl::optional<InterceptSettings> &get_settings() {
-  static absl::optional<InterceptSettings> settings{};
-  if (!settings) settings = fetch_settings();
-  return settings;
-}
-
 /// replaces cmd according to the configuration if possible
-absl::optional<CompilationCommand>
-replace_compilation_command(CompilationCommand cmd) {
-  auto settings = get_settings();
-  if (!settings) {
-    std::cerr << "Settings could not be fetched!\n";
+absl::optional<CompilationCommand> replace_compilation_command(
+    CompilationCommand cmd) {
+  InterceptSettings settings;
+  std::string settings_env{std::getenv("INTERCEPT_SETTINGS")};
+  if (!google::protobuf::TextFormat::ParseFromString(settings_env, &settings)) {
+    std::cerr << "Settings could not be read!\n";
+    std::cerr << "Tried to parse settings from environment: "
+              << std::getenv("INTERCEPT_SETTINGS") << "\n";
     return {};
   }
 
-  Replacer replacer(*settings);
+  Replacer replacer(settings);
   return replacer.Replace(std::move(cmd));
 }
 
@@ -104,20 +82,18 @@ int intercept(const char *fn_name, const char *path, char *const argv[],
 
   auto replaced_command = replace_compilation_command(command);
   if (!replaced_command) {
-    std::cerr << "Command could not be replaced!\n";
     return original_exec(path, argv, envp...);
   }
 
   report_replacement(command, *replaced_command);
-
   unhook(&envp...);
   auto exec_arguments = to_argv(*replaced_command);
 
-  return original_exec(replaced_command->command.data(),
-                       exec_arguments.data(), envp...);
+  return original_exec(replaced_command->command.data(), exec_arguments.data(),
+                       envp...);
 }
 
-} // namespace
+}  // namespace
 
 extern "C" {
 

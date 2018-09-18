@@ -7,12 +7,13 @@ cc_binary(
     linkopts = [
         "-ldl",
     ],
-    linkshared = 1,
-    linkstatic = 1,
+    linkshared = True,
+    linkstatic = True,
     visibility = ["//visibility:public"],
     deps = [
         "//build_system/proto:cpp",
         "//build_system/replacer",
         "@abseil//absl/types:optional",
+        "@com_github_grpc_grpc//:grpc++_unsecure",
     ],
 )

@@ -1,9 +1,8 @@
 load("@io_bazel_rules_go//go:def.bzl", "go_library")
 load("@io_bazel_rules_go//proto:def.bzl", "go_proto_library")
+load("@com_github_grpc_grpc//bazel:cc_grpc_library.bzl", "cc_grpc_library")
 
 package(default_visibility = ["//visibility:public"])
-
-load("@org_pubref_rules_protobuf//cpp:rules.bzl", "cc_proto_library")
 
 filegroup(
     name = "protos",
@@ -12,16 +11,17 @@ filegroup(
     ],
 )
 
-cc_proto_library(
-    name = "cpp",
-    protos = [":protos"],
-    verbose = 0,
-    with_grpc = True,
-)
-
 proto_library(
     name = "intercept_proto",
     srcs = ["intercept.proto"],
+)
+
+cc_grpc_library(
+    name = "cpp",
+    srcs = [":protos"],
+    proto_only = False,
+    well_known_protos = [],
+    deps = [],
 )
 
 go_proto_library(

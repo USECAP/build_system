@@ -18,6 +18,7 @@ cc_test(
     copts = ["-Iexternal/gtest/include"],
     deps = [
         ":replacer",
+        "@com_github_grpc_grpc//:grpc++_unsecure",
         "@googletest//:gtest_main",
     ],
 )

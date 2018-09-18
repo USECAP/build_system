@@ -2,6 +2,7 @@ package main
 
 import (
 	"context"
+
 	"github.com/spf13/viper"
 
 	pb "gitlab.com/code-intelligence/core/build_system/proto"

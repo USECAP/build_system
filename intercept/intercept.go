@@ -112,8 +112,10 @@ func main() {
 	}()
 
 	env := os.Environ()
-	env = append(env, "LD_PRELOAD="+preloadLibPath())
+
+	env = append(env, fmt.Sprintf("LD_PRELOAD=%s", preloadLibPath()))
 	env = append(env, "REPORT_URL="+serverAddr)
+	env = append(env, "INTERCEPT_SETTINGS="+settings())
 	cmd := exec.Command(buildCmd[0], buildCmd[1:]...)
 	cmd.Env = env
 	out, err := cmd.CombinedOutput()
@@ -168,4 +170,21 @@ func serve(service *interceptorService) error {
 	}()
 
 	return nil
+}
+
+func settings() string {
+	settings := &pb.InterceptSettings{
+		MatchingRules: []*pb.MatchingRule{{
+			MatchCommand:    viper.GetString("match_cc"),
+			ReplaceCommand:  viper.GetString("replace_cc"),
+			AddArguments:    viper.GetStringSlice("add_arguments"),
+			RemoveArguments: viper.GetStringSlice("remove_arguments"),
+		}, {
+			MatchCommand:    viper.GetString("match_cxx"),
+			ReplaceCommand:  viper.GetString("replace_cxx"),
+			AddArguments:    viper.GetStringSlice("add_arguments"),
+			RemoveArguments: viper.GetStringSlice("remove_arguments"),
+		}},
+	}
+	return settings.String()
 }
