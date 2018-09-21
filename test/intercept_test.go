@@ -199,14 +199,16 @@ func useShippedCompiler() (err error) {
 		return fmt.Errorf("clang not found: %v", err)
 	}
 	clangDir, _ := filepath.Split(clang)
-	afl, err := bazel.Runfile(filepath.Join("afl", "afl-gcc"))
+	aflBinPath, err := bazel.Runfile("afl/bin/afl-gcc")
 	if err != nil {
-		return fmt.Errorf("afl not found: %v", err)
+		return fmt.Errorf("afl-gcc not found: %v", err)
 	}
-	aflDir, _ := filepath.Split(afl)
-
-	paths := []string{clangDir, aflDir, os.Getenv("PATH")}
+	aflBinDir, _ := filepath.Split(aflBinPath)
+	paths := []string{clangDir, aflBinDir, os.Getenv("PATH")}
 	os.Setenv("PATH", strings.Join(paths, string(os.PathListSeparator)))
-	os.Setenv("AFL_PATH", filepath.Join(aflDir, "helpers"))
+
+	aflLibPath, err := bazel.Runfile("afl/lib/afl/as")
+	aflLibDir, _ := filepath.Split(aflLibPath)
+	os.Setenv("AFL_PATH", aflLibDir)
 	return
 }
