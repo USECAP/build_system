@@ -3,6 +3,7 @@ cc_library(
     srcs = [
         "StandaloneFuzzTargetMain.c",
     ],
+    copts = ["-std=c99"],
     linkstatic = 1,
     visibility = ["//visibility:public"],
 )
