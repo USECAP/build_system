@@ -126,7 +126,7 @@ func main() {
 
 	if viper.GetBool("create_compiler_db") {
 		commands := createCompilationDb(interceptedCommands)
-		out, err := json.Marshal(commands)
+		out, err := json.MarshalIndent(commands, "", "    ")
 		if err != nil {
 			panic(err)
 		}

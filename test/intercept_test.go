@@ -18,62 +18,63 @@ import (
 	"gitlab.com/code-intelligence/core/build_system/types"
 )
 
-var (
-	interceptPath string
-	cwd           string
-	dbFilePath    string
-)
-
-func readCompilationDb(dbFilePath string) (commands []types.CompilationCommand, err error) {
-	// expect that dbFilePath exists
+func readCompilationDb() (commands []types.CompilationCommand) {
+	dbFilePath := path.Join(getWorkDir(), "compile_commands.json")
 	db, err := ioutil.ReadFile(dbFilePath)
 	if err != nil {
-		return
+		log.Fatalf("Failed to read compilation db %q: %q", dbFilePath, err)
 	}
 	defer os.Remove(dbFilePath)
 	err = json.Unmarshal(db, &commands)
-
 	return
 }
 
-func readCompilationDbForExec(env []string, args ...string) (commands []types.CompilationCommand, err error) {
-	cmd := exec.Command(interceptPath, args...)
+func runIntercept(env []string, args ...string) {
+	cmd := exec.Command(getInterceptPath(), args...)
+	cmd.Dir = getWorkDir()
 	cmd.Env = env
-	cmd.Dir = cwd
 	out, err := cmd.CombinedOutput()
-	fmt.Println("out", string(out))
 	if err != nil {
-		err = fmt.Errorf(
-			"exec failed, error: %s, stderr: %s, stdout: %s",
-			err, cmd.Stderr, string(out))
-		return
+		log.Fatalf("exec failed, error: %s, stderr: %s, stdout: %s", err, cmd.Stderr, string(out))
 	}
-	commands, err = readCompilationDb(dbFilePath)
+}
 
-	return
+func getInterceptPath() string {
+	var ok bool
+	interceptPath, ok := bazel.FindBinary("../intercept", "intercept")
+	if !ok {
+		log.Fatal("intercept not found")
+		os.Exit(-1)
+	}
+	interceptPath, _ = filepath.Abs(interceptPath)
+	return interceptPath
+}
+
+func getWorkDir() string {
+	base, err := bazel.RunfilesPath()
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	return path.Join(base, "code_intelligence/build_system/test/data/make")
 }
 
 func TestInterceptor(t *testing.T) {
-	env := os.Environ()
-	env = append(env, "CC=echo")
-
-	buildSh, err := bazel.Runfile(
-		"code_intelligence/build_system/test/data/build_sh/build.sh")
+	buildSh, err := bazel.Runfile("code_intelligence/build_system/test/data/build_sh/build.sh")
 	if err != nil {
 		t.Fatal(err)
 	}
 
+	env := append(os.Environ(), "CC=echo")
 	testCommands := []string{"make", buildSh}
 	for _, cmd := range testCommands {
-		commands, err := readCompilationDbForExec(
-			env, "--create_compiler_db", cmd)
-		if err != nil {
-			t.Fatal(err)
-		}
+		runIntercept(env, "--create_compiler_db", cmd)
+
+		commands := readCompilationDb()
 
 		expected := []types.CompilationCommand{{
 			Arguments: []string{"echo", "-O2", "hello.c", "-o", "hello.o"},
-			Directory: cwd,
+			Directory: getWorkDir(),
 			Output:    "hello.o",
 			File:      "hello.c",
 		}}
@@ -83,16 +84,14 @@ func TestInterceptor(t *testing.T) {
 }
 
 func TestInterceptorBashScript(t *testing.T) {
-	env := os.Environ()
-	env = append(env, "CC=echo")
-	commands, err := readCompilationDbForExec(env, "--create_compiler_db", "./build.sh")
-	if err != nil {
-		t.Fatal(err)
-	}
+	env := append(os.Environ(), "CC=echo")
+	runIntercept(env, "--create_compiler_db", "./build.sh")
+
+	commands := readCompilationDb()
 
 	expected := []types.CompilationCommand{{
 		Arguments: []string{"echo", "-O2", "hello.c", "-o", "hello.o"},
-		Directory: cwd,
+		Directory: getWorkDir(),
 		Output:    "hello.o",
 		File:      "hello.c",
 	}}
@@ -100,28 +99,13 @@ func TestInterceptorBashScript(t *testing.T) {
 	assertCommandsAreEqual(t, commands, expected)
 }
 
-func assertCommandsAreEqual(t *testing.T, actual, expected []types.CompilationCommand) {
-	t.Helper()
-	if !reflect.DeepEqual(actual, expected) {
-		t.Errorf(`Commands did not match.
-expected: %+v
-got:      %+v`, expected, actual)
-	}
-}
-
 func TestMatchCommand(t *testing.T) {
-	commands, err := readCompilationDbForExec(nil,
-		"--create_compiler_db",
-		"--match_cc", "gcc",
-		"--replace_cc", "clang",
-		"make")
-	if err != nil {
-		t.Fatal(err)
-	}
+	runIntercept(nil, "--create_compiler_db", "--match_cc", "gcc", "--replace_cc", "clang", "make")
+	commands := readCompilationDb()
 
 	expected := []types.CompilationCommand{{
 		Arguments: []string{"clang", "-O2", "hello.c", "-o", "hello.o"},
-		Directory: cwd,
+		Directory: getWorkDir(),
 		Output:    "hello.o",
 		File:      "hello.c",
 	}}
@@ -139,24 +123,29 @@ func TestConfigs(t *testing.T) {
 
 	for fuzzer := range fuzzerConfigs {
 		for _, cc := range []string{"cc", "cxx"} {
+			runIntercept(nil, "--create_compiler_db", "--fuzzer", fuzzer, "make", cc)
+			commands := readCompilationDb()
+
 			fuzzerCompiler := viper.GetString("fuzzers." + fuzzer + ".replace_" + cc)
 			fuzzerDefaultArgs := viper.GetStringSlice("fuzzers." + fuzzer + ".add_arguments")
-			commands, err := readCompilationDbForExec(nil, "--create_compiler_db", "--fuzzer", fuzzer, "make", cc)
-			if err != nil {
-				t.Fatal(err)
-			}
-
 			expected := []types.CompilationCommand{{
 				Arguments: append(
 					[]string{fuzzerCompiler, "hello.c", "-o", "hello.o"},
 					fuzzerDefaultArgs...),
-				Directory: cwd,
+				Directory: getWorkDir(),
 				Output:    "hello.o",
 				File:      "hello.c",
 			}}
 
 			assertCommandsAreEqual(t, commands, expected)
 		}
+	}
+}
+
+func assertCommandsAreEqual(t *testing.T, actual, expected []types.CompilationCommand) {
+	t.Helper()
+	if !reflect.DeepEqual(actual, expected) {
+		t.Errorf(`Commands did not match.\n expected: %+v \ngot: %+v`, expected, actual)
 	}
 }
 
@@ -171,23 +160,11 @@ func TestMain(m *testing.M) {
 	}
 
 	// read the default fuzzer configuration
-	viper.SetConfigFile(path.Join(base,
-		"code_intelligence", "build_system", "config", "config.yaml"))
+	viper.SetConfigFile(path.Join(base, "code_intelligence", "build_system", "config", "config.yaml"))
 	err = viper.ReadInConfig()
 	if err != nil {
 		panic(fmt.Errorf("Fatal error config file: %s \n", err))
 	}
-
-	var ok bool
-	interceptPath, ok = bazel.FindBinary("../intercept", "intercept")
-	if !ok {
-		log.Fatal("intercept not found")
-		os.Exit(-1)
-	}
-	interceptPath, _ = filepath.Abs(interceptPath)
-
-	cwd = path.Join(base, "code_intelligence/build_system/test/data/make")
-	dbFilePath = path.Join(cwd, "compile_commands.json")
 
 	retCode := m.Run()
 	os.Exit(retCode)
@@ -198,17 +175,22 @@ func useShippedCompiler() (err error) {
 	if err != nil {
 		return fmt.Errorf("clang not found: %v", err)
 	}
-	clangDir, _ := filepath.Split(clang)
+	clangDir := path.Dir(clang)
+
 	aflBinPath, err := bazel.Runfile("afl/bin/afl-gcc")
 	if err != nil {
 		return fmt.Errorf("afl-gcc not found: %v", err)
 	}
-	aflBinDir, _ := filepath.Split(aflBinPath)
+	aflBinDir := path.Dir(aflBinPath)
+
 	paths := []string{clangDir, aflBinDir, os.Getenv("PATH")}
 	os.Setenv("PATH", strings.Join(paths, string(os.PathListSeparator)))
 
 	aflLibPath, err := bazel.Runfile("afl/lib/afl/as")
-	aflLibDir, _ := filepath.Split(aflLibPath)
+	if err != nil {
+		return fmt.Errorf("afl/as not found: %v", err)
+	}
+	aflLibDir := path.Dir(aflLibPath)
 	os.Setenv("AFL_PATH", aflLibDir)
 	return
 }
