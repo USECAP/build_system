@@ -9,21 +9,16 @@ import (
 	"net"
 	"os"
 	"os/exec"
-	"path"
-	"path/filepath"
-
-	"github.com/bazelbuild/rules_go/go/tools/bazel"
 	"github.com/spf13/pflag"
 	"github.com/spf13/viper"
 	pb "gitlab.com/code-intelligence/core/build_system/proto"
 	"gitlab.com/code-intelligence/core/build_system/types"
 	"google.golang.org/grpc"
+	pathutil "gitlab.com/code-intelligence/core/utils/path"
 )
 
 const serverAddr = "localhost:6774"
 const compilerDbPath = "compile_commands.json"
-const testPreloadLibPath = "code_intelligence/build_system/preload_interceptor/preload_interceptor.so"
-const prodPreloadLibPath = "preload_interceptor.so"
 const CompilationDbFlag = "create_compiler_db"
 
 func init() {
@@ -32,8 +27,13 @@ func init() {
 
 func setDefaultValues() {
 
-	viper.SetConfigFile(configFilePath())
-	err := viper.ReadInConfig()
+	configFilePath, err := pathutil.Find("code_intelligence/build_system/config/config.yaml")
+	if err != nil {
+		log.Fatalf("Failed to find config.yaml: %q", err)
+	}
+
+	viper.SetConfigFile(configFilePath)
+	err = viper.ReadInConfig()
 	if err != nil {
 		panic(fmt.Errorf("Fatal error config file: %s \n", err))
 	}
@@ -46,39 +46,6 @@ func setDefaultValues() {
 
 	viper.BindEnv("replace_cc", "CC")
 	viper.BindEnv("replace_cxx", "CXX")
-}
-
-func configFilePath() string {
-	base, err := bazel.RunfilesPath()
-	if err != nil {
-		// Assume we run in production
-		// XXX: Use our path library
-		return path.Join(executableDir(), "../share/code-intelligence/config.yaml")
-	}
-	return path.Join(base, "code_intelligence", "build_system", "config", "config.yaml")
-}
-
-func preloadLibPath() string {
-	base, err := bazel.RunfilesPath()
-	if err != nil {
-		// Assume we run in production
-		return path.Join(executableDir(), prodPreloadLibPath)
-	}
-	return path.Join(base, testPreloadLibPath)
-}
-
-func executableDir() string {
-	executable, err := os.Executable()
-	if err != nil {
-		log.Fatalf("Error getting executable path: %s\n", err)
-	}
-
-	res, err := filepath.EvalSymlinks(executable)
-	if err != nil {
-		log.Fatalf("Error evaluating symlinks in path '%s': %s\n", executable, err)
-	}
-
-	return filepath.Dir(res)
 }
 
 func main() {
@@ -113,7 +80,12 @@ func main() {
 
 	env := os.Environ()
 
-	env = append(env, fmt.Sprintf("LD_PRELOAD=%s", preloadLibPath()))
+	preloadLibPath, err := pathutil.Find("code_intelligence/build_system/preload_interceptor/preload_interceptor.so")
+	if err != nil {
+		log.Fatalf("Failed to find preload_interceptor.so: %q", err)
+	}
+
+	env = append(env, fmt.Sprintf("LD_PRELOAD=%s", preloadLibPath))
 	env = append(env, "REPORT_URL="+serverAddr)
 	env = append(env, "INTERCEPT_SETTINGS="+settings())
 	cmd := exec.Command(buildCmd[0], buildCmd[1:]...)
