@@ -14,7 +14,7 @@ import (
 	pb "gitlab.com/code-intelligence/core/build_system/proto"
 	"gitlab.com/code-intelligence/core/build_system/types"
 	"google.golang.org/grpc"
-	pathutil "gitlab.com/code-intelligence/core/utils/path"
+	pathUtil "gitlab.com/code-intelligence/core/utils/path"
 )
 
 const serverAddr = "localhost:6774"
@@ -27,7 +27,7 @@ func init() {
 
 func setDefaultValues() {
 
-	configFilePath, err := pathutil.Find("code_intelligence/build_system/config/config.yaml")
+	configFilePath, err := pathUtil.Find("code_intelligence/build_system/config/config.yaml")
 	if err != nil {
 		log.Fatalf("Failed to find config.yaml: %q", err)
 	}
@@ -80,7 +80,7 @@ func main() {
 
 	env := os.Environ()
 
-	preloadLibPath, err := pathutil.Find("code_intelligence/build_system/preload_interceptor/preload_interceptor.so")
+	preloadLibPath, err := pathUtil.Find("code_intelligence/build_system/preload_interceptor/preload_interceptor.so")
 	if err != nil {
 		log.Fatalf("Failed to find preload_interceptor.so: %q", err)
 	}
