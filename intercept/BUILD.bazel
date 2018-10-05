@@ -16,7 +16,6 @@ go_library(
         "//build_system/proto:go_default_library",
         "//build_system/types:go_default_library",
         "//utils/path:go_default_library",
-        "@com_github_bazelbuild_rules_go//go/tools/bazel:go_default_library",
         "@com_github_spf13_pflag//:go_default_library",
         "@com_github_spf13_viper//:go_default_library",
         "@org_golang_google_grpc//:go_default_library",
