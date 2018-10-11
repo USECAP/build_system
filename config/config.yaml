@@ -24,8 +24,8 @@ fuzzers:
     - "-Og"
   afl:
     <<: *fuzzer_defaults
-    replace_cc: "afl-gcc"
-    replace_cxx: "afl-g++"
+    replace_cc: "afl-clang"
+    replace_cxx: "afl-clang++"
     add_arguments+:
       - "-O0"
   llvm-cov:

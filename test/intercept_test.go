@@ -100,11 +100,11 @@ func TestInterceptorBashScript(t *testing.T) {
 }
 
 func TestMatchCommand(t *testing.T) {
-	runIntercept(nil, "--create_compiler_db", "--match_cc", "gcc", "--replace_cc", "clang", "make")
+	runIntercept(nil, "--create_compiler_db", "--match_cc", "clang", "--replace_cc", "afl-clang", "make")
 	commands := readCompilationDb()
 
 	expected := []types.CompilationCommand{{
-		Arguments: []string{"clang", "-O2", "hello.c", "-o", "hello.o"},
+		Arguments: []string{"afl-clang", "-O2", "hello.c", "-o", "hello.o"},
 		Directory: getWorkDir(),
 		Output:    "hello.o",
 		File:      "hello.c",
@@ -145,7 +145,7 @@ func TestConfigs(t *testing.T) {
 func assertCommandsAreEqual(t *testing.T, actual, expected []types.CompilationCommand) {
 	t.Helper()
 	if !reflect.DeepEqual(actual, expected) {
-		t.Errorf(`Commands did not match.\n expected: %+v \ngot: %+v`, expected, actual)
+		t.Errorf("Commands did not match.\nexp: %+v\ngot: %+v", expected, actual)
 	}
 }
 
@@ -177,9 +177,9 @@ func useShippedCompiler() (err error) {
 	}
 	clangDir := path.Dir(clang)
 
-	aflBinPath, err := bazel.Runfile("afl/bin/afl-gcc")
+	aflBinPath, err := bazel.Runfile("afl/bin/afl-clang")
 	if err != nil {
-		return fmt.Errorf("afl-gcc not found: %v", err)
+		return fmt.Errorf("afl-clang not found: %v", err)
 	}
 	aflBinDir := path.Dir(aflBinPath)
 
