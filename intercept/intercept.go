@@ -14,7 +14,7 @@ import (
 	pb "gitlab.com/code-intelligence/core/build_system/proto"
 	"gitlab.com/code-intelligence/core/build_system/types"
 	"google.golang.org/grpc"
-	pathUtil "gitlab.com/code-intelligence/core/utils/path"
+	pathUtil "gitlab.com/code-intelligence/core/utils/pathutils"
 )
 
 const serverAddr = "localhost:6774"
