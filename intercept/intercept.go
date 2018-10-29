@@ -9,12 +9,13 @@ import (
 	"net"
 	"os"
 	"os/exec"
+
 	"github.com/spf13/pflag"
 	"github.com/spf13/viper"
 	pb "gitlab.com/code-intelligence/core/build_system/proto"
 	"gitlab.com/code-intelligence/core/build_system/types"
-	"google.golang.org/grpc"
 	pathUtil "gitlab.com/code-intelligence/core/utils/pathutils"
+	"google.golang.org/grpc"
 )
 
 const serverAddr = "localhost:6774"
@@ -48,12 +49,23 @@ func setDefaultValues() {
 	viper.BindEnv("replace_cxx", "CXX")
 }
 
+func usage() {
+	fmt.Printf("Usage: %s [OPTIONS] BUILD_COMMAND ...\n", os.Args[0])
+	pflag.PrintDefaults()
+}
+
 func main() {
+	pflag.Usage = usage
 	pflag.CommandLine.AddGoFlagSet(flag.CommandLine)
 	pflag.Parse()
 	viper.BindPFlags(pflag.CommandLine)
 
 	buildCmd := pflag.Args()
+
+	if len(buildCmd) == 0 {
+		pflag.Usage()
+		os.Exit(1)
+	}
 
 	// if the fuzzer argument is set, set new defaults from config file with that fuzzer name; if not found ignore
 	if desiredFuzzer := viper.GetString("fuzzer"); desiredFuzzer != "" && viper.IsSet("fuzzers."+desiredFuzzer) {
