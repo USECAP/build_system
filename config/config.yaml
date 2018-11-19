@@ -10,6 +10,9 @@ fuzzer_defaults: &fuzzer_defaults
     - "-Og"
   add_arguments:
     - "-g"
+    # CFLAGS from oss-fuzz/infra/base-images/base-clang/Dockerfile
+    - "-gline-tables-only"
+    - "-DFUZZING_BUILD_MODE_UNSAFE_FOR_PRODUCTION"
 
 fuzzers:
   libfuzzer:
@@ -19,9 +22,9 @@ fuzzers:
     remove_arguments+:
       - "-fomit-frame-pointer"
     add_arguments+:
-    - "-fno-omit-frame-pointer"
-    - "-fsanitize=fuzzer-no-link"
-    - "-Og"
+      - "-fno-omit-frame-pointer"
+      - "-fsanitize=fuzzer-no-link"
+      - "-Og"
   afl:
     <<: *fuzzer_defaults
     replace_cc: "afl-clang"
@@ -35,7 +38,7 @@ fuzzers:
     remove_arguments+:
       - "-fomit-frame-pointer"
     add_arguments+:
-    - "-O0"
-    - "-fno-omit-frame-pointer"
-    - "-fprofile-instr-generate"
-    - "-fcoverage-mapping"
+      - "-O0"
+      - "-fno-omit-frame-pointer"
+      - "-fprofile-instr-generate"
+      - "-fcoverage-mapping"

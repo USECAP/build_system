@@ -41,8 +41,8 @@ func setDefaultValues() {
 	pflag.Bool(CompilationDbFlag, false, "Whether to create compilation database")
 	pflag.String("match_cc", ccMatchCommand, "Override default cc match command")
 	pflag.String("match_cxx", cxxMatchCommand, "Override default cxx match command")
-	pflag.String("replace_cc", "cc", "Whether to replace cc")
-	pflag.String("replace_cxx", "c++", "Whether to replace cxx")
+	pflag.String("replace_cc", "clang", "The command to replace the C compiler with")
+	pflag.String("replace_cxx", "clang++", "The command to replace the C++ compiler with")
 	pflag.String("fuzzer", "", "Whether a specific fuzzer config should be used")
 
 	viper.BindEnv("replace_cc", "CC")
