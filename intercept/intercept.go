@@ -9,6 +9,7 @@ import (
 	"net"
 	"os"
 	"os/exec"
+	"strings"
 
 	"github.com/spf13/pflag"
 	"github.com/spf13/viper"
@@ -44,9 +45,10 @@ func setDefaultValues() {
 	pflag.String("replace_cc", "clang", "The command to replace the C compiler with")
 	pflag.String("replace_cxx", "clang++", "The command to replace the C++ compiler with")
 	pflag.String("fuzzer", "", "Whether a specific fuzzer config should be used")
-
+	pflag.String("sanitizer_flags", "", "The sanitizer flags")
 	viper.BindEnv("replace_cc", "CC")
 	viper.BindEnv("replace_cxx", "CXX")
+	viper.BindEnv("sanitizer_flags", "SANITIZER_FLAGS")
 }
 
 func usage() {
@@ -72,8 +74,22 @@ func main() {
 		fuzzerConfigPrefix := "fuzzers." + desiredFuzzer + "."
 		viper.SetDefault("replace_cc", viper.GetString(fuzzerConfigPrefix+"replace_cc"))
 		viper.SetDefault("replace_cxx", viper.GetString(fuzzerConfigPrefix+"replace_cxx"))
-		viper.SetDefault("add_arguments", viper.GetStringSlice(fuzzerConfigPrefix+"add_arguments"))
-		viper.SetDefault("remove_arguments", viper.GetStringSlice(fuzzerConfigPrefix+"remove_arguments"))
+
+		removeArgs, err := arguments(fuzzerConfigPrefix, "remove_arguments")
+		if err != nil {
+			panic("failed to fetch the remove_arguments configuration")
+		}
+		viper.SetDefault("remove_arguments", removeArgs)
+
+		addArgs, err := arguments(fuzzerConfigPrefix, "add_arguments")
+		if err != nil {
+			panic("failed to fetch the add_arguments configuration")
+		}
+
+		if sanFlags := viper.GetString("sanitizer_flags"); sanFlags != "" {
+			addArgs = append(addArgs, strings.Fields(sanFlags)...)
+		}
+		viper.SetDefault("add_arguments", addArgs)
 	}
 
 	service := newInterceptorService()
@@ -85,7 +101,11 @@ func main() {
 	var interceptedCommands []*pb.InterceptedCommand
 	go func() {
 		for c := range service.interceptedCommands {
-			fmt.Printf("%+v\n", c)
+			originalCmd := strings.Join(c.OriginalArguments, " ")
+			replacedCmd := strings.Join(c.ReplacedArguments, " ")
+			fmt.Printf("Original Command:\n%s\n", originalCmd)
+			fmt.Printf("Replaced Command:\n%s\n", replacedCmd)
+			fmt.Println("---------------------------------")
 			interceptedCommands = append(interceptedCommands, c)
 		}
 	}()
@@ -119,6 +139,13 @@ func main() {
 			panic(err)
 		}
 	}
+}
+
+func arguments(prefix, tag string) (args []string, err error) {
+	configKey := prefix + tag
+	args = viper.GetStringSlice(configKey)
+	args = append(args, viper.GetStringSlice(configKey+"+")...)
+	return
 }
 
 func createCompilationDb(cmds []*pb.InterceptedCommand) (res []types.CompilationCommand) {

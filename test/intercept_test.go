@@ -127,11 +127,12 @@ func TestConfigs(t *testing.T) {
 			commands := readCompilationDb()
 
 			fuzzerCompiler := viper.GetString("fuzzers." + fuzzer + ".replace_" + cc)
-			fuzzerDefaultArgs := viper.GetStringSlice("fuzzers." + fuzzer + ".add_arguments")
+			fuzzerAddArgs := viper.GetStringSlice("fuzzers." + fuzzer + ".add_arguments")
+			fuzzerAddArgs = append(fuzzerAddArgs, viper.GetStringSlice("fuzzers."+fuzzer+".add_arguments+")...)
 			expected := []types.CompilationCommand{{
 				Arguments: append(
 					[]string{fuzzerCompiler, "hello.c", "-o", "hello.o"},
-					fuzzerDefaultArgs...),
+					fuzzerAddArgs...),
 				Directory: getWorkDir(),
 				Output:    "hello.o",
 				File:      "hello.c",

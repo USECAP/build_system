@@ -30,7 +30,7 @@ absl::optional<CompilationCommand> Replacer::Replace(
 
   cc.command = rule->replace_command();
 
-  cc.arguments.front() = basename(cc.command);
+  cc.arguments.front() = cc.command;
   return cc;
 }
 
