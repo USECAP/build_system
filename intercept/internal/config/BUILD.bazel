@@ -1,0 +1,29 @@
+load("@io_bazel_rules_go//go:def.bzl", "go_library", "go_test")
+
+go_library(
+    name = "go_default_library",
+    srcs = [
+        "config.go",
+        "settings.go",
+    ],
+    importpath = "gitlab.com/code-intelligence/core/build_system/intercept/internal/config",
+    visibility = ["//visibility:public"],
+    deps = [
+        "//build_system/proto:go_default_library",
+        "//utils/pathutils:go_default_library",
+        "@com_github_spf13_pflag//:go_default_library",
+        "@com_github_spf13_viper//:go_default_library",
+    ],
+)
+
+go_test(
+    name = "go_default_test",
+    timeout = "short",
+    srcs = ["config_test.go"],
+    data = [
+        "@afl",
+        "@llvm",
+    ],
+    embed = [":go_default_library"],
+    deps = ["@com_github_spf13_viper//:go_default_library"],
+)

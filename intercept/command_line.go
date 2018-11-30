@@ -1,8 +1,9 @@
 package main
 
 import (
-	"gitlab.com/code-intelligence/core/build_system/proto"
 	"path"
+
+	"gitlab.com/code-intelligence/core/build_system/proto"
 )
 
 var inputSuffixes = map[string]struct{}{

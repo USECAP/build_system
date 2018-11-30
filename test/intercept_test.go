@@ -14,7 +14,6 @@ import (
 	"testing"
 
 	"github.com/bazelbuild/rules_go/go/tools/bazel"
-	"github.com/spf13/viper"
 	"gitlab.com/code-intelligence/core/build_system/types"
 )
 
@@ -113,36 +112,6 @@ func TestMatchCommand(t *testing.T) {
 	assertCommandsAreEqual(t, commands, expected)
 }
 
-func TestConfigs(t *testing.T) {
-	fuzzers := viper.Sub("fuzzers")
-	var fuzzerConfigs map[string]interface{}
-	err := fuzzers.Unmarshal(&fuzzerConfigs)
-	if err != nil {
-		t.Fatal(err)
-	}
-
-	for fuzzer := range fuzzerConfigs {
-		for _, cc := range []string{"cc", "cxx"} {
-			runIntercept(nil, "--create_compiler_db", "--fuzzer", fuzzer, "make", cc)
-			commands := readCompilationDb()
-
-			fuzzerCompiler := viper.GetString("fuzzers." + fuzzer + ".replace_" + cc)
-			fuzzerAddArgs := viper.GetStringSlice("fuzzers." + fuzzer + ".add_arguments")
-			fuzzerAddArgs = append(fuzzerAddArgs, viper.GetStringSlice("fuzzers."+fuzzer+".add_arguments+")...)
-			expected := []types.CompilationCommand{{
-				Arguments: append(
-					[]string{fuzzerCompiler, "hello.c", "-o", "hello.o"},
-					fuzzerAddArgs...),
-				Directory: getWorkDir(),
-				Output:    "hello.o",
-				File:      "hello.c",
-			}}
-
-			assertCommandsAreEqual(t, commands, expected)
-		}
-	}
-}
-
 func assertCommandsAreEqual(t *testing.T, actual, expected []types.CompilationCommand) {
 	t.Helper()
 	if !reflect.DeepEqual(actual, expected) {
@@ -151,20 +120,8 @@ func assertCommandsAreEqual(t *testing.T, actual, expected []types.CompilationCo
 }
 
 func TestMain(m *testing.M) {
-	base, err := bazel.RunfilesPath()
-	if err != nil {
-		log.Fatal(err)
-	}
-
 	if err := useShippedCompiler(); err != nil {
 		log.Fatal(err)
-	}
-
-	// read the default fuzzer configuration
-	viper.SetConfigFile(path.Join(base, "code_intelligence", "build_system", "config", "config.yaml"))
-	err = viper.ReadInConfig()
-	if err != nil {
-		panic(fmt.Errorf("Fatal error config file: %s \n", err))
 	}
 
 	retCode := m.Run()

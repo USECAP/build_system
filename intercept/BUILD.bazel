@@ -8,12 +8,12 @@ go_library(
         "interceptor_service.go",
     ],
     data = [
-        "//build_system/config",
         "//build_system/preload_interceptor:preload_interceptor.so",
     ],
     importpath = "gitlab.com/code-intelligence/core/build_system/intercept",
     visibility = ["//visibility:private"],
     deps = [
+        "//build_system/intercept/internal/config:go_default_library",
         "//build_system/proto:go_default_library",
         "//build_system/types:go_default_library",
         "//utils/pathutils:go_default_library",

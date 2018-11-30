@@ -8,15 +8,6 @@ import (
 	pb "gitlab.com/code-intelligence/core/build_system/proto"
 )
 
-const ccMatchCommand = `^([^-]*-)*[mg]cc(-\d+(\.\d+){0,2})?$|` +
-	`^([^-]*-)*clang(-\d+(\.\d+){0,2})?$|` +
-	`^(|i)cc$|^(g|)xlc$`
-
-// TOOD(perl): check that regex is correct.
-const cxxMatchCommand = `^([^-]*-)*[cmg]\+\+(-\d+(\.\d+){0,2})?$|` +
-	`^([^-]*-)*clang\+\+(-\d+(\.\d+){0,2})?$|` +
-	`^(|i)cc$|^(g|)xlc$`
-
 type interceptorService struct {
 	interceptedCommands chan *pb.InterceptedCommand
 }
