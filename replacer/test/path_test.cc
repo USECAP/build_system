@@ -35,22 +35,6 @@ struct PathResolverTest : public ::testing::Test {
 TEST_F(PathResolverTest, does_resolve_filenames) {
   chdir("sandbox/home/dir1/dir2");
   auto path = get_absolute_command_path("true");
-  ASSERT_TRUE(path);
-
   auto expected_Path = false_root + "/sandbox/bin/true";
-  EXPECT_EQ(*path, expected_Path);
-}
-
-TEST_F(PathResolverTest, does_resolve_relative_paths) {
-  chdir("sandbox/home/dir1/dir2");
-  auto path1 = get_absolute_command_path("../true");
-  ASSERT_TRUE(path1);
-
-  chdir("../");
-  auto path2 = get_absolute_command_path("./true");
-  ASSERT_TRUE(path2);
-
-  auto expected_Path = false_root + "/sandbox/home/dir1/true";
-  EXPECT_EQ(*path1, expected_Path);
-  EXPECT_EQ(*path2, expected_Path);
+  EXPECT_EQ(path, expected_Path);
 }

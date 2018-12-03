@@ -10,13 +10,16 @@
 #include "absl/types/optional.h"
 #include "build_system/replacer/replacer.h"
 #include "intercept_settings.h"
+#include "build_system/replacer/path.h"
 
 namespace {
 
 void unhook() { unsetenv("LD_PRELOAD"); }
 
 void unhook(char *const **envp) {
-  // TODO Clear environment from parameter
+  environ = const_cast<char **>(*envp);
+  unhook();
+  envp = const_cast<char *const **>(&environ);
 }
 
 /// converts a va_list of char* to a vector
@@ -88,6 +91,8 @@ int intercept(const char *fn_name, const char *path, char *const argv[],
   report_replacement(command, *replaced_command);
   unhook(&envp...);
   auto exec_arguments = to_argv(*replaced_command);
+
+  replaced_command->command = get_absolute_command_path(replaced_command->command);
 
   return original_exec(replaced_command->command.data(), exec_arguments.data(),
                        envp...);

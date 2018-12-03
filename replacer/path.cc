@@ -10,6 +10,7 @@
 
 #include "absl/strings/str_split.h"
 #include "re2/re2.h"
+#include "absl/types/optional.h"
 
 namespace {
 
@@ -72,13 +73,13 @@ const char *FileFinder::get_path_env() const {
   return path_env;
 }
 
-absl::optional<std::string> get_absolute_command_path(std::string command) {
+std::string get_absolute_command_path(std::string command) {
   if (is_not_a_path(command)) {
-    auto ff = FileFinder(std::move(command));
-    return ff.get_candidate();
+    auto command_path = FileFinder(std::move(command)).get_candidate();
+    if (command_path) return *command_path;
   }
 
-  return make_canonical_path(std::move(command));
+  return command;
 }
 
 std::string basename(absl::string_view s) {
